@@ -1,7 +1,7 @@
 import { extension_settings, getContext } from "../../../extensions.js";
 import { eventSource, event_types, saveSettingsDebounced } from "../../../../script.js";
 
-import { getStatus, isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener.js";
+import { isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener.js";
 
 const extensionName = "smarter-rpg";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
@@ -38,41 +38,79 @@ function initSettings() {
 
 const DEFAULT_FRONTEND_TEMPLATE = "[{{name}} - {{stats}}]";
 
+function isSystemName(name) {
+    return String(name || "").trim().toLowerCase() === "system";
+}
+
+function getCurrentPersonaKey() {
+    const uiPersonaName = String($("#your_name").first().text() || "").trim();
+    if (uiPersonaName) return `persona:${uiPersonaName}`;
+
+    const ctx = getContext();
+    const fallbackName = String(ctx?.name1 || "").trim();
+    return fallbackName ? `persona:${fallbackName}` : "persona:default";
+}
+
+function formatProfileStats(stats = {}) {
+    return Object.entries(stats)
+        .map(([k, v]) => {
+            if (isRangeStat(v)) {
+                return `${k}:${normalizeRangeStat(v).value}`;
+            }
+            return `${k}:${getStatNumericValue(v)}`;
+        })
+        .join(" ")
+        .trim();
+}
+
+function buildLineForProfile(displayName, profileName, template, store) {
+    if (!displayName || isSystemName(displayName) || !profileName) return null;
+
+    const stats = store?.profiles?.[profileName]?.stats || {};
+    const statStr = formatProfileStats(stats);
+    if (!statStr) return null;
+
+    return template
+        .replace(/\{\{name\}\}/g, () => displayName)
+        .replace(/\{\{stats\}\}/g, () => statStr);
+}
+
 function buildGlobalStatLine() {
     const ctx = getContext();
-    const chat = ctx?.chat || [];
-
-    const seen = new Set();
-
-    for (const msg of chat) {
-        if (msg?.name) seen.add(msg.name);
-    }
-
-    const stats = getStatus();
+    const store = extension_settings[extensionName] || {};
     const customTemplate = extension_settings[extensionName]?.frontendStatTemplate?.trim();
     const template = customTemplate || DEFAULT_FRONTEND_TEMPLATE;
 
-    return Array.from(seen).map(name => {
-        const statStr = Object.entries(stats)
-            .map(([k, v]) => {
-                if (isRangeStat(v)) {
-                    return `${k}:${normalizeRangeStat(v).value}`;
-                }
-                return `${k}:${getStatNumericValue(v)}`;
-            })
-            .join(" ");
+    const lines = [];
 
-        return template
-            .replace(/\{\{name\}\}/g, () => name)
-            .replace(/\{\{stats\}\}/g, () => statStr);
-    }).join("\n");
+    const personaName = String($("#your_name").first().text() || "").trim() || String(ctx?.name1 || "").trim();
+    const personaProfile = store.activeProfiles?.[getCurrentPersonaKey()] || "default";
+    const personaLine = buildLineForProfile(personaName, personaProfile, template, store);
+    if (personaLine) lines.push(personaLine);
+
+    const characterName = String(ctx?.name2 || "").trim();
+    if (!isSystemName(characterName)) {
+        const characterProfile = ctx?.characterId ? store.activeProfiles?.[ctx.characterId] : null;
+        const characterLine = buildLineForProfile(characterName, characterProfile, template, store);
+        if (characterLine) lines.push(characterLine);
+    }
+
+    return lines.join("\n");
 }
 function injectStatsIntoMainPrompt() {
     const ctx = getContext();
 
+    if (isSystemName(ctx?.name2)) {
+        ctx.setExtensionPrompt("SMARTRPG_STATS", "", 0, 0, false);
+        return;
+    }
+
     const statBlock = buildGlobalStatLine();
 
-    if (!statBlock.trim()) return;
+    if (!statBlock.trim()) {
+        ctx.setExtensionPrompt("SMARTRPG_STATS", "", 0, 0, false);
+        return;
+    }
 
     ctx.setExtensionPrompt(
         "SMARTRPG_STATS",     // unique key
@@ -362,17 +400,6 @@ function injectCharacterProfileSelector() {
     container.append(html);
 
     refreshCharacterProfileDropdown();
-}
-
-function getCurrentPersonaKey() {
-    const uiPersonaName = String($("#your_name").first().text() || "").trim();
-    if (uiPersonaName) {
-        return `persona:${uiPersonaName}`;
-    }
-
-    const context = getContext();
-    const fallbackName = String(context?.name1 || "").trim();
-    return fallbackName ? `persona:${fallbackName}` : "persona:default";
 }
 
 function injectPersonaProfileSelector() {

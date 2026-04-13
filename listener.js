@@ -219,6 +219,48 @@ function getSelectedProfileName() {
     return (charId && store.activeProfiles?.[charId]) || "default";
 }
 
+function getCurrentPersonaKey() {
+    const uiPersonaName = String($("#your_name").first().text() || "").trim();
+    if (uiPersonaName) return `persona:${uiPersonaName}`;
+
+    const context = getContext();
+    const fallbackName = String(context?.name1 || "").trim();
+    return fallbackName ? `persona:${fallbackName}` : "persona:default";
+}
+
+function resolveProfileForMessageEl(el) {
+    if (!el) return "default";
+
+    const isSystem = String(el.getAttribute("is_system") || "").toLowerCase() === "true";
+    if (isSystem) return null;
+
+    const store = getStore();
+    const isUser = String(el.getAttribute("is_user") || "").toLowerCase() === "true";
+
+    if (isUser) {
+        return store.activeProfiles?.[getCurrentPersonaKey()] || "default";
+    }
+
+    const context = getContext();
+    const charId = context?.characterId;
+    return (charId && store.activeProfiles?.[charId]) || "default";
+}
+
+function activateProfileForMessageId(id) {
+    const el = getMessageElById(id);
+    const profileName = resolveProfileForMessageEl(el);
+
+    if (!profileName) return null;
+
+    const bucket = ensureBucket();
+    if (!bucket.data[profileName]) {
+        bucket.data[profileName] = { stats: {}, defs: {} };
+    }
+
+    bucket.active = profileName;
+    return profileName;
+}
+
 function ensureStoreProfile(profileName) {
     const store = getStore();
     store.profiles = store.profiles || {};
@@ -542,6 +584,9 @@ let processingQueue = Promise.resolve();
 async function handleMessage(id) {
     if (id === undefined || id === null) return;
 
+    const activeProfile = activateProfileForMessageId(id);
+    if (!activeProfile) return;
+
     await new Promise(requestAnimationFrame);
 
     const text = getMessageText(id);
@@ -771,13 +816,11 @@ function isExtensionEnabled() {
 
 eventSource.on(event_types.MESSAGE_SENT, async (id) => {
     if (!isExtensionEnabled()) return;
-    if (Object.keys(getStatus()).length === 0) return;
     await handleMessage(id);
 });
 
 eventSource.on(event_types.MESSAGE_EDITED, async (id) => {
     if (!isExtensionEnabled()) return;
-    if (Object.keys(getStatus()).length === 0) return;
     await handleMessage(id);
 });
 
