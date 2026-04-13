@@ -596,8 +596,18 @@ let processingQueue = Promise.resolve();
 async function handleMessage(id) {
     if (id === undefined || id === null) return;
 
-    const activeProfile = activateProfileForMessageId(id);
-    if (!activeProfile) return;
+    const el = getMessageElById(id);
+    const profileName = getProfileForMessageEl(el);
+
+    if (!profileName) return;
+
+    const bucket = ensureBucket();
+
+    if (!bucket.data[profileName]) {
+        bucket.data[profileName] = { stats: {}, defs: {} };
+    }
+
+    bucket.active = profileName; // only for runtime context, NOT persistence
 
     await new Promise(requestAnimationFrame);
 
@@ -766,7 +776,21 @@ function applyStats(changes = {}) {
         updateStatValue(stats, k, current + Number(changes[k] || 0));
     }
 }
+function getProfileForMessageEl(el) {
+    if (!el) return "default";
 
+    const isUser = String(el.getAttribute("is_user") || "").toLowerCase() === "true";
+
+    const store = getStore();
+    const context = getContext();
+    const charId = context?.characterId;
+
+    if (isUser) {
+        return store.activeProfiles?.[getCurrentPersonaKey()] || "default";
+    }
+
+    return (charId && store.activeProfiles?.[charId]) || "default";
+}
 /* =========================
    RENDER
 ========================= */
