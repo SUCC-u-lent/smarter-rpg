@@ -5,7 +5,7 @@ import { isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener
 
 const extensionName = "smarter-rpg";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-const DEFAULT_API_URL = "http://localhost:10434/api/generate";
+const DEFAULT_API_URL = "http://192.168.20.99:5055/generate";
 
 function logSmarterRpg(message, details) {
     const timestamp = new Date().toISOString();

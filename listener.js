@@ -10,7 +10,7 @@ const CONFIG = {
     historyDepth: 6,
 };
 
-const DEFAULT_API_URL = "http://localhost:10434/api/generate";
+const DEFAULT_API_URL = "http://192.168.20.99:5055/generate";
 
 const EXTENSION_NAME = "smarter-rpg";
 
