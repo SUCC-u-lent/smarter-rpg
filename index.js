@@ -1,4 +1,4 @@
-import { extension_settings, getContext } from "../../extensions.js";
+import { extension_settings, getContext } from "../../../extensions.js";
 import { eventSource, event_types, saveSettingsDebounced } from "../../../../script.js";
 
 import { getStatus, isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener.js";
