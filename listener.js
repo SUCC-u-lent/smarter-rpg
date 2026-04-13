@@ -45,7 +45,7 @@ function saveKeyframe(messageId, statsSnapshot, changes) {
     let frames = store.keyframes[chatId] || [];
 
     // Replace any existing entry for this message (swipe / edit)
-    frames = frames.filter(f => f.id !== messageId);
+    frames = frames.filter(f => f !== messageId);
 
     frames.push({
         id: messageId,
@@ -617,10 +617,10 @@ async function handleMessage(id) {
         await new Promise(r => setTimeout(r, 50));
         const retry = getMessageText(id);
         if (!retry || retry.trim() === "...") return;
-        return processMessage(id, retry);
+        return processMessage(id, getMessageText(id), el);
     }
 
-    return processMessage(id, text);
+    return processMessage(id, getMessageText(id), el);
 }
 function filterValidStats(changes = {}) {
     const valid = {};
@@ -643,7 +643,8 @@ function revertStats(changes = {}) {
         updateStatValue(stats, k, current - Number(changes[k] || 0));
     }
 }
-async function processMessage(id, text) {
+async function processMessage(id, text, el)
+{
     processingQueue = processingQueue.then(async () => {
         // 🔥 REMOVE OLD DELTA FIRST (for swipe / edit)
         if (messageDeltas[id]) {
@@ -660,8 +661,8 @@ async function processMessage(id, text) {
         messageDeltas[id] = changes;
 
         const statsSnapshot = cloneJson(getStatus());
-        saveKeyframe(id, statsSnapshot, changes);
-        renderResult(id, statsSnapshot, changes);
+        saveKeyframe(el, statsSnapshot, changes);
+        renderResult(el, statsSnapshot, changes);
     });
 }
 
@@ -795,11 +796,8 @@ function getProfileForMessageEl(el) {
    RENDER
 ========================= */
 
-function renderResult(id, statsSnapshot, changes = {}) {
+function renderResult(el, statsSnapshot, changes = {}) {
     const attempt = () => {
-        const el = getMessageElById(id);
-        if (!el) return false;
-
         const block = ensureBlock(el);
         if (!block) return false;
 
