@@ -4,7 +4,7 @@ import { eventSource, event_types, saveSettingsDebounced } from "../../../../scr
 import { getStatus, isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener.js";
 
 const extensionName = "smarter-rpg";
-const extensionFolderPath = `scripts/extensions/${extensionName}`;
+const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 /* =========================
    INIT STORAGE
