@@ -1,0 +1,19 @@
+<div class="statai-stat-row">
+    <label>Stat Name: </label><input type="text" style="background-color:black;color:white;" class="statai-stat-name" value="HP"/><br/>
+    <label>Stat Type: </label>
+    <select class="statai-stat-mode" style="background-color:black;color:white;">
+        <option value="number">Number</option>
+        <option value="range">Range</option>
+        <option value="hidden_infinite">Hidden Infinite</option>
+    </select><br/>
+    <label>Stat Default: </label><input type="number" style="background-color:black;color:white;" class="statai-stat-default" value="100"/><br/>
+    <div class="statai-range-fields" style="display:none;">
+        <label>Min: </label><input type="number" style="background-color:black;color:white;" class="statai-stat-min" value="0"/><br/>
+        <label>Max: </label><input type="number" style="background-color:black;color:white;" class="statai-stat-max" value="100"/><br/>
+    </div>
+    <label>Stat Description: </label><input type="text" style="background-color:black;color:white;" class="statai-stat-desc" value="Physical health; 0 means incapacitated"/><br/>
+    <div id="remove_stat_item" class="menu_button menu_button_icon interactable" title="Remove Stat" tabindex="0" role="button">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <small data-i18n="ext_regex_new_global_script">- Stat</small>
+    </div>
+</div>

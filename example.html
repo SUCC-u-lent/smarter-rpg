@@ -1,0 +1,87 @@
+<div class="example-extension-settings">
+    <div class="inline-drawer">
+
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Smarter RPG</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+
+        <div class="inline-drawer-content">
+
+            <!-- ENABLE TOGGLE -->
+            <div class="statai-section">
+                <label class="checkbox_label" for="statai-enabled-toggle">
+                    <input type="checkbox" id="statai-enabled-toggle" checked />
+                    <span>Extension Enabled</span>
+                </label>
+            </div>
+
+
+            <hr class="sysHR" />
+
+            <!-- PROMPT TEMPLATES -->
+            <div class="statai-section">
+                <b>Prompt Templates</b>
+
+                <div class="statai-template-group">
+                    <label>Backend Prompt <small>(sent to stat-evaluation AI)</small></label>
+                    <small class="statai-template-hint">Variables: <code>{{stats}}</code> <code>{{limits}}</code> <code>{{definitions}}</code> <code>{{input}}</code></small>
+                    <textarea id="statai-backend-prompt-template" class="text_pole" rows="8" placeholder="Leave empty to use the built-in default..."></textarea>
+                    <div id="statai-reset-backend-prompt" class="menu_button menu_button_icon interactable" title="Reset to default" tabindex="0" role="button">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <small>Reset to Default</small>
+                    </div>
+                </div>
+
+                <hr class="sysHR" />
+
+                <div class="statai-template-group">
+                    <label>Stat Injection <small>(injected into main AI context per character)</small></label>
+                    <small class="statai-template-hint">Variables: <code>{{name}}</code> <code>{{stats}}</code> &nbsp;—&nbsp; Default: <code>[{{name}} - {{stats}}]</code></small>
+                    <textarea id="statai-frontend-stat-template" class="text_pole" rows="2" placeholder="Leave empty to use the built-in default..."></textarea>
+                    <div id="statai-reset-frontend-template" class="menu_button menu_button_icon interactable" title="Reset to default" tabindex="0" role="button">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <small>Reset to Default</small>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <!-- PROFILE SELECTOR -->
+            <div class="statai-section">
+                <label><b>Stat Profile</b></label>
+                <select id="statai-profile-select" class="text_pole">
+                    <option value="default">Default</option>
+                </select>
+                <div id="create_profile_menu" class="menu_button menu_button_icon interactable" title="New Profile" tabindex="0" role="button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <small data-i18n="ext_regex_new_global_script">+ Profile</small>
+                </div>
+                <div id="remove_profile_menu" class="menu_button menu_button_icon interactable" title="Remove Profile" tabindex="1" role="button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <small data-i18n="ext_regex_new_global_script">- Profile</small>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <!-- STAT TABLE HEADER -->
+            <div class="statai-section">
+                <b>Stats</b>
+                <div id="create_stat_menu" class="menu_button menu_button_icon interactable" title="New Stat" tabindex="0" role="button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <small data-i18n="ext_regex_new_global_script">+ Stat</small>
+                </div>
+                <div id="save_stats_menu" class="menu_button menu_button_icon interactable" title="Save Stats" tabindex="0" role="button">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <small data-i18n="ext_regex_new_global_script">Save</small>
+                </div>
+                <div id="statai-stats-container">
+                    
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

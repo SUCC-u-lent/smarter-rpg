@@ -1,0 +1,11 @@
+{
+    "display_name": "Smarter RPG",
+    "loading_order": 9,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Ubunifu",
+    "version": "1.0.0",
+    "homePage": "https://yourUrlHere.com"
+}
