@@ -5,6 +5,7 @@ import { isRangeStat, normalizeRangeStat, getStatNumericValue } from "./listener
 
 const extensionName = "smarter-rpg";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+const DEFAULT_API_URL = "http://localhost:10434/api/generate";
 
 function logSmarterRpg(message, details) {
     const timestamp = new Date().toISOString();
@@ -32,6 +33,7 @@ function initSettings() {
     if (s.enabled === undefined) s.enabled = true;
     if (s.backendPromptTemplate === undefined) s.backendPromptTemplate = "";
     if (s.frontendStatTemplate === undefined) s.frontendStatTemplate = "";
+    if (s.apiUrl === undefined) s.apiUrl = DEFAULT_API_URL;
 
     saveSettingsDebounced();
 }
@@ -356,6 +358,12 @@ function wireUI() {
         saveSettingsDebounced();
     });
 
+    $(document).on("input blur", "#statai-api-url", function () {
+        const raw = String($(this).val() || "").trim();
+        extension_settings[extensionName].apiUrl = raw || DEFAULT_API_URL;
+        saveSettingsDebounced();
+    });
+
     $(document).on("click", "#statai-reset-backend-prompt", function () {
         extension_settings[extensionName].backendPromptTemplate = "";
         $("#statai-backend-prompt-template").val("");
@@ -549,6 +557,7 @@ jQuery(async () => {
     if (store?.frontendStatTemplate) {
         $("#statai-frontend-stat-template").val(store.frontendStatTemplate);
     }
+    $("#statai-api-url").val(store?.apiUrl || DEFAULT_API_URL);
 
     console.log("[SmarterRPG] Loaded");
     refreshProfileDropdown();

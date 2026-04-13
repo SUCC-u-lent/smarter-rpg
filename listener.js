@@ -10,6 +10,8 @@ const CONFIG = {
     historyDepth: 6,
 };
 
+const DEFAULT_API_URL = "http://localhost:10434/api/generate";
+
 const EXTENSION_NAME = "smarter-rpg";
 
 function logSmarterRpgListener(message, details) {
@@ -195,7 +197,16 @@ function getStore() {
         activeProfiles: {}
     };
 
+    if (!extension_settings[EXTENSION_NAME].apiUrl) {
+        extension_settings[EXTENSION_NAME].apiUrl = DEFAULT_API_URL;
+    }
+
     return extension_settings[EXTENSION_NAME];
+}
+
+function getApiUrl() {
+    const store = getStore();
+    return String(store.apiUrl || DEFAULT_API_URL).trim() || DEFAULT_API_URL;
 }
 
 function getSelectedProfileName() {
@@ -649,9 +660,10 @@ async function processMessage(id, text) {
 
 async function evaluateAction(input) {
     const prompt = buildPrompt(input);
+    const apiUrl = getApiUrl();
 
     try {
-        const res = await fetch("http://localhost:10434/api/generate", {
+        const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -671,7 +683,7 @@ async function evaluateAction(input) {
         return safeParse(text);
 
     } catch (err) {
-        console.error("[StatAI] AI error:", err);
+        console.error("[StatAI] AI error:", { apiUrl, err });
         return fallbackResult();
     }
 }
