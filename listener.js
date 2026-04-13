@@ -578,7 +578,8 @@ function resetStatus() {
 ========================= */
 
 function getMessageElById(id) {
-    return document.querySelector(`.mes[mesid="${id}"]`);
+    return document.querySelector(`.mes[mesid="${id}"]`)
+        || document.querySelector(`.mes:last-child`);
 }
 
 function getMessageText(id) {
@@ -771,39 +772,54 @@ function applyStats(changes = {}) {
 ========================= */
 
 function renderResult(id, statsSnapshot, changes = {}) {
-    const el = getMessageElById(id);
-    if (!el) return;
+    const attempt = () => {
+        const el = getMessageElById(id);
+        if (!el) return false;
 
-    const block = ensureBlock(el);
+        const block = ensureBlock(el);
+        if (!block) return false;
 
-    block.innerHTML = `
-        <div class="statai-stat-display">
-            ${Object.entries(statsSnapshot)
-                .map(([k, v]) => {
-                    const delta = Number(changes[k] || 0);
-                    const hasDelta = delta !== 0;
+        block.innerHTML = `
+            <div class="statai-stat-display">
+                ${Object.entries(statsSnapshot)
+                    .map(([k, v]) => {
+                        const delta = Number(changes[k] || 0);
+                        const hasDelta = delta !== 0;
 
-                    let deltaHtml = "";
-                    if (hasDelta) {
-                        const sign = delta > 0 ? "+" : "";
-                        const color = delta > 0 ? "#4caf50" : "#f44336";
-                        deltaHtml = ` <span style="color:${color};font-weight:bold">(${sign}${delta})</span>`;
-                    }
-
-                    if (isRangeStat(v)) {
-                        const normalized = normalizeRangeStat(v);
-                        let rangeLabel = "";
-                        if (normalized.type === STAT_RANGE_TYPE.BOUNDED) {
-                            rangeLabel = `<span style="opacity:0.6"> / ${normalized.max}</span>`;
+                        let deltaHtml = "";
+                        if (hasDelta) {
+                            const sign = delta > 0 ? "+" : "";
+                            const color = delta > 0 ? "#4caf50" : "#f44336";
+                            deltaHtml = ` <span style="color:${color};font-weight:bold">(${sign}${delta})</span>`;
                         }
-                        return `<div><b>${k}</b>: ${normalized.value}${rangeLabel}${deltaHtml}</div>`;
-                    }
 
-                    return `<div><b>${k}</b>: ${getStatNumericValue(v)}${deltaHtml}</div>`;
-                })
-                .join("")}
-        </div>
-    `;
+                        if (isRangeStat(v)) {
+                            const normalized = normalizeRangeStat(v);
+                            let rangeLabel = "";
+                            if (normalized.type === STAT_RANGE_TYPE.BOUNDED) {
+                                rangeLabel = `<span style="opacity:0.6"> / ${normalized.max}</span>`;
+                            }
+                            return `<div><b>${k}</b>: ${normalized.value}${rangeLabel}${deltaHtml}</div>`;
+                        }
+
+                        return `<div><b>${k}</b>: ${getStatNumericValue(v)}${deltaHtml}</div>`;
+                    })
+                    .join("")}
+            </div>
+        `;
+
+        return true;
+    };
+
+    if (attempt()) return;
+
+    let tries = 0;
+    const timer = setInterval(() => {
+        tries++;
+        if (attempt() || tries > 15) {
+            clearInterval(timer);
+        }
+    }, 50);
 }
 
 function ensureBlock(el) {
