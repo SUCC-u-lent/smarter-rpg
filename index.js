@@ -6,6 +6,16 @@ import { getStatus, isRangeStat, normalizeRangeStat, getStatNumericValue } from 
 const extensionName = "smarter-rpg";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
+function logSmarterRpg(message, details) {
+    const timestamp = new Date().toISOString();
+    if (details !== undefined) {
+        console.log(`[SmarterRPG][${timestamp}] ${message}`, details);
+        return;
+    }
+
+    console.log(`[SmarterRPG][${timestamp}] ${message}`);
+}
+
 /* =========================
    INIT STORAGE
 ========================= */
@@ -247,8 +257,20 @@ $(document).on("click", "#remove_stat_item", function () {
 ========================= */
 
 function saveStatusBridge() {
-    // calls listener function indirectly via UI save trigger
-    // listener already owns logic, we just trigger event-style flow
+    const selectedProfile = $("#statai-profile-select").val();
+    const rowCount = $(".statai-stat-row").length;
+
+    logSmarterRpg("Save button/event bridge invoked", {
+        selectedProfile,
+        rowCount
+    });
+
+    toastr.info(
+        `Profile saved - changes will be reflected in the next generation.`,
+        "Saved Profile!"
+    );
+
+    logSmarterRpg("Dispatching smarter_rpg_save event");
     $(document).trigger("smarter_rpg_save");
 }
 
@@ -264,8 +286,14 @@ function wireUI() {
 
     $("#save_stats_menu").on("click", saveStatusBridge);
 
+    logSmarterRpg("UI handlers wired", {
+        hasSaveButton: $("#save_stats_menu").length > 0,
+        hasProfileSelect: $("#statai-profile-select").length > 0
+    });
+
     $("#statai-profile-select").on("change", function () {
         const profile = $(this).val();
+        logSmarterRpg("Profile select changed", { profile });
         saveStatusBridge();
         $(document).trigger("smarter_rpg_switch_profile", [profile]);
     });
@@ -300,12 +328,14 @@ function wireUI() {
         extension_settings[extensionName].backendPromptTemplate = "";
         $("#statai-backend-prompt-template").val("");
         saveSettingsDebounced();
+        logSmarterRpg("Backend prompt template reset");
     });
 
     $(document).on("click", "#statai-reset-frontend-template", function () {
         extension_settings[extensionName].frontendStatTemplate = "";
         $("#statai-frontend-stat-template").val("");
         saveSettingsDebounced();
+        logSmarterRpg("Frontend stat template reset");
     });
 }
 
@@ -391,7 +421,7 @@ jQuery(async () => {
 
         saveSettingsDebounced();
 
-        console.log("[SmarterRPG] Character profile set:", charId, selected);
+        logSmarterRpg("Character profile set", { charId, selected });
 
         // notify listener
         $(document).trigger("smarter_rpg_switch_profile", [selected]);

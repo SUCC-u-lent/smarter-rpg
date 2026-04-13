@@ -12,6 +12,16 @@ const CONFIG = {
 
 const EXTENSION_NAME = "smarter-rpg";
 
+function logSmarterRpgListener(message, details) {
+    const timestamp = new Date().toISOString();
+    if (details !== undefined) {
+        console.log(`[SmarterRPG][listener][${timestamp}] ${message}`, details);
+        return;
+    }
+
+    console.log(`[SmarterRPG][listener][${timestamp}] ${message}`);
+}
+
 /* =========================
    PROFILE STATE
 ========================= */
@@ -226,6 +236,12 @@ function loadProfilesFromSettings() {
     const store = getStore();
     const savedProfiles = store.profiles || {};
 
+    logSmarterRpgListener("Loading profiles from settings", {
+        savedProfileNames: Object.keys(savedProfiles),
+        selectedProfile: getSelectedProfileName(),
+        profileSelectExists: $("#statai-profile-select").length > 0
+    });
+
     bucket.data = {};
 
     for (const [name, profile] of Object.entries(savedProfiles)) {
@@ -248,6 +264,11 @@ function loadProfilesFromSettings() {
 
     const wanted = getSelectedProfileName();
     bucket.active = bucket.data[wanted] ? wanted : "default";
+
+    logSmarterRpgListener("Profiles loaded into runtime bucket", {
+        runtimeProfiles: Object.keys(bucket.data),
+        activeProfile: bucket.active
+    });
 }
 
 function buildEditorRow(statName, statValue, statDesc = "") {
@@ -313,8 +334,10 @@ function hydrateEditorFromActiveProfile() {
 function readEditorStats() {
     const nextStats = {};
     const nextDefs = {};
+    let rowCount = 0;
 
     $(".statai-stat-row").each((_, rowEl) => {
+        rowCount += 1;
         const row = $(rowEl);
         const name = String(row.find(".statai-stat-name").val() || "").trim();
         if (!name) return;
@@ -345,27 +368,49 @@ function readEditorStats() {
         nextDefs[name] = String(row.find(".statai-stat-desc").val() || "").trim();
     });
 
+    logSmarterRpgListener("Read editor stats", {
+        rowCount,
+        parsedStatNames: Object.keys(nextStats)
+    });
+
     return { nextStats, nextDefs };
 }
 
 function saveActiveProfileToSettings() {
-    const { nextStats, nextDefs } = readEditorStats();
-    const profileName = getSelectedProfileName();
+    try {
+        const { nextStats, nextDefs } = readEditorStats();
+        const profileName = getSelectedProfileName();
 
-    const bucket = ensureBucket();
-    if (!bucket.data[profileName]) {
-        bucket.data[profileName] = { stats: {}, defs: {} };
+        logSmarterRpgListener("Saving active profile to settings", {
+            profileName,
+            statCount: Object.keys(nextStats).length,
+            defCount: Object.keys(nextDefs).length
+        });
+
+        const bucket = ensureBucket();
+        if (!bucket.data[profileName]) {
+            bucket.data[profileName] = { stats: {}, defs: {} };
+        }
+
+        bucket.active = profileName;
+        setStatus(nextStats);
+        setStatDefinitions(nextDefs);
+
+        const storeProfile = ensureStoreProfile(profileName);
+        storeProfile.stats = cloneJson(nextStats);
+        storeProfile.defs = cloneJson(nextDefs);
+
+        saveSettingsDebounced();
+
+        const store = getStore();
+        logSmarterRpgListener("Save dispatched via saveSettingsDebounced", {
+            savedProfileNames: Object.keys(store.profiles || {}),
+            savedStatsKeys: Object.keys(store.profiles?.[profileName]?.stats || {})
+        });
+    } catch (err) {
+        console.error("[SmarterRPG][listener] Failed to save active profile", err);
+        throw err;
     }
-
-    bucket.active = profileName;
-    setStatus(nextStats);
-    setStatDefinitions(nextDefs);
-
-    const storeProfile = ensureStoreProfile(profileName);
-    storeProfile.stats = cloneJson(nextStats);
-    storeProfile.defs = cloneJson(nextDefs);
-
-    saveSettingsDebounced();
 }
 
 /* =========================
@@ -735,6 +780,7 @@ eventSource.on(event_types.GENERATION_ENDED, async (id) => {
 });
 
 $(document).on("smarter_rpg_switch_profile", (_, profileName) => {
+    logSmarterRpgListener("Received smarter_rpg_switch_profile event", { profileName });
     loadProfilesFromSettings();
 
     if (profileName) {
@@ -742,9 +788,18 @@ $(document).on("smarter_rpg_switch_profile", (_, profileName) => {
     }
 
     hydrateEditorFromActiveProfile();
+
+    logSmarterRpgListener("Profile switch complete", {
+        activeProfile: profileName || getSelectedProfileName(),
+        editorRowCount: $(".statai-stat-row").length
+    });
 });
 
 $(document).on("smarter_rpg_save", () => {
+    logSmarterRpgListener("Received smarter_rpg_save event", {
+        selectedProfile: getSelectedProfileName(),
+        editorRowCount: $(".statai-stat-row").length
+    });
     loadProfilesFromSettings();
     saveActiveProfileToSettings();
 });
