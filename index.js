@@ -379,7 +379,7 @@ function injectPersonaProfileSelector() {
     const container = $(".persona_management_right_column").first();
     if (!container.length) return false;
 
-    if ($("#statai-persona-profile").length) return true;
+    if ($("#statai-persona-profile").length) return false;
 
     const html = `
         <div id="statai-persona-profile" class="statai_block">
@@ -447,9 +447,7 @@ function startPersonaPanelObserver() {
     personaPanelObserverStarted = true;
 
     const observer = new MutationObserver(() => {
-        if (injectPersonaProfileSelector()) {
-            refreshPersonaProfileDropdown();
-        }
+        injectPersonaProfileSelector();
     });
 
     observer.observe(document.body, {
