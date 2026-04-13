@@ -294,7 +294,6 @@ function wireUI() {
     $("#statai-profile-select").on("change", function () {
         const profile = $(this).val();
         logSmarterRpg("Profile select changed", { profile });
-        saveStatusBridge();
         $(document).trigger("smarter_rpg_switch_profile", [profile]);
     });
 
