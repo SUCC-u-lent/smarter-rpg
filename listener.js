@@ -840,7 +840,7 @@ eventSource.on(event_types.GENERATION_ENDED, async (id) => {
     if (!isExtensionEnabled()) return;
     const safe = Number(id);
     if (!Number.isNaN(safe)) {
-        await handleMessage(safe - 1);
+        await handleMessage(safe);
     }
 });
 
