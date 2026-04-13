@@ -264,12 +264,6 @@ function saveStatusBridge() {
         selectedProfile,
         rowCount
     });
-
-    toastr.info(
-        `Profile saved - changes will be reflected in the next generation.`,
-        "Saved Profile!"
-    );
-
     logSmarterRpg("Dispatching smarter_rpg_save event");
     $(document).trigger("smarter_rpg_save");
 }
