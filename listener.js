@@ -206,6 +206,16 @@ function getSelectedProfileName() {
     const charId = context?.characterId;
     const store = getStore();
 
+    const uiPersonaName = String($("#your_name").first().text() || "").trim();
+    const fallbackName = String(context?.name1 || "").trim();
+    const personaKey = uiPersonaName
+        ? `persona:${uiPersonaName}`
+        : (fallbackName ? `persona:${fallbackName}` : "persona:default");
+
+    if (store.activeProfiles?.[personaKey]) {
+        return store.activeProfiles[personaKey];
+    }
+
     return (charId && store.activeProfiles?.[charId]) || "default";
 }
 

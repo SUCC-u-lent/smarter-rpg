@@ -242,6 +242,7 @@ function refreshProfileDropdown(allowClearDefault = true) {
         select.val(active);
     }
     refreshCharacterProfileDropdown();
+    refreshPersonaProfileDropdown();
 }
 /* =========================
    REMOVE PROFILE ITEM
@@ -361,7 +362,39 @@ function injectCharacterProfileSelector() {
     container.append(html);
 
     refreshCharacterProfileDropdown();
-}function refreshCharacterProfileDropdown() {
+}
+
+function getCurrentPersonaKey() {
+    const uiPersonaName = String($("#your_name").first().text() || "").trim();
+    if (uiPersonaName) {
+        return `persona:${uiPersonaName}`;
+    }
+
+    const context = getContext();
+    const fallbackName = String(context?.name1 || "").trim();
+    return fallbackName ? `persona:${fallbackName}` : "persona:default";
+}
+
+function injectPersonaProfileSelector() {
+    const container = $(".persona_management_right_column").first();
+    if (!container.length) return false;
+
+    if ($("#statai-persona-profile").length) return true;
+
+    const html = `
+        <div id="statai-persona-profile" class="statai_block">
+            <label><b>RPG Profile</b></label>
+            <select id="statai-persona-profile-select"></select>
+        </div>
+    `;
+
+    // Add to the end of the persona right column.
+    container.append(html);
+    refreshPersonaProfileDropdown();
+    return true;
+}
+
+function refreshCharacterProfileDropdown() {
     const store = extension_settings[extensionName];
     const select = $("#statai-character-profile-select");
 
@@ -384,9 +417,51 @@ function injectCharacterProfileSelector() {
         select.val(active);
     }
 }
+
+function refreshPersonaProfileDropdown() {
+    const store = extension_settings[extensionName];
+    const select = $("#statai-persona-profile-select");
+
+    if (!select.length) return;
+
+    select.empty();
+
+    const profiles = store.profiles || {};
+
+    for (const name of Object.keys(profiles)) {
+        select.append(`<option value="${name}">${name}</option>`);
+    }
+
+    const personaKey = getCurrentPersonaKey();
+    const active = store.activeProfiles?.[personaKey];
+
+    if (active) {
+        select.val(active);
+    }
+}
+
+let personaPanelObserverStarted = false;
+
+function startPersonaPanelObserver() {
+    if (personaPanelObserverStarted) return;
+    personaPanelObserverStarted = true;
+
+    const observer = new MutationObserver(() => {
+        if (injectPersonaProfileSelector()) {
+            refreshPersonaProfileDropdown();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
 eventSource.on(event_types.CHAT_LOADED, () => {
     setTimeout(() => {
         injectCharacterProfileSelector();
+        injectPersonaProfileSelector();
     }, 100);
 });
 eventSource.on(event_types.GENERATION_STARTED, () => {
@@ -397,6 +472,8 @@ jQuery(async () => {
 
     await loadUI();
     wireUI();
+    startPersonaPanelObserver();
+    injectPersonaProfileSelector();
     $(document).on("click", "#remove_profile_menu", function () {
         removeProfile();
     });
@@ -415,6 +492,22 @@ jQuery(async () => {
         saveSettingsDebounced();
 
         logSmarterRpg("Character profile set", { charId, selected });
+
+        // notify listener
+        $(document).trigger("smarter_rpg_switch_profile", [selected]);
+    });
+    $(document).on("change", "#statai-persona-profile-select", function () {
+        const store = extension_settings[extensionName];
+
+        const selected = $(this).val();
+        const personaKey = getCurrentPersonaKey();
+
+        store.activeProfiles = store.activeProfiles || {};
+        store.activeProfiles[personaKey] = selected;
+
+        saveSettingsDebounced();
+
+        logSmarterRpg("Persona profile set", { personaKey, selected });
 
         // notify listener
         $(document).trigger("smarter_rpg_switch_profile", [selected]);
