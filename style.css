@@ -7,7 +7,7 @@
     padding: 6px 10px;
     margin-top: 6px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 0.85em;
+    font-size: 0.75em;
     color: #ccc;
 }
 
@@ -40,4 +40,22 @@
     padding: 1px 4px;
     border-radius: 3px;
     font-size: 0.95em;
+}
+
+.statai-profile-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.statai-profile-actions .menu_button {
+    margin: 0;
+}
+
+.statai-stat-value {
+    width: fit-content;
+    height: fit-content;
+    border: none;
+    background: none;
+    font-size: 0.75em;
 }
