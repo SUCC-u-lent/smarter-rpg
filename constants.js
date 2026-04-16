@@ -5,10 +5,22 @@ const extensionName = "smarter-rpg";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {};
 
-var active = true;
+function isActive() { return getExtensionSettings()?.isExtensionActive || false; }
+function setActive(value) 
+{
+    const set = getExtensionSettings();
+    set.isExtensionActive = value;
+    saveSettings(set);
+}
 
-function isActive() { return active; }
-function setActive(value) { active = value; }
+function getPosition() { return getExtensionSettings()?.position || null; }
+function setPosition(value) 
+{
+    const set = getExtensionSettings();
+    set.position = value;
+    saveSettings(set);
+}
+
 function isKeyPresent(key) { return key in getExtensionSettings(); }
 function getExtensionSettings() { return extension_settings[extensionName]; }
 function saveSettings(settings)
@@ -29,5 +41,7 @@ export {
     getExtensionSettings,
     saveSettings,
     getSetting,
-    setSetting
+    setSetting,
+    getPosition,
+    setPosition
 }

@@ -59,3 +59,27 @@
     background: none;
     font-size: 0.75em;
 }
+input.statai-input[type="number"],
+input.statai-input[type="text"] {
+    background-color: black;
+    border-top: none;
+    border-left:none;
+    border-right: none;
+    color: white;
+}
+
+input.statai-input[type="button"]
+{
+    background-color: black;
+    color: white;
+}
+
+input.statai-stat-value[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input.statai-input::-webkit-outer-spin-button,
+input.statai-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

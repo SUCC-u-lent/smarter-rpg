@@ -2,6 +2,30 @@ import { getContext } from "../../../../extensions.js";
 import { getDataFor, saveDataFor } from "../data_storage/extension_storage.js";
 import { getProfileByName } from "../data_storage/profile_constants.js";
 
+function normalizeChatStatsStore(chatStats)
+{
+    if (Array.isArray(chatStats))
+    {
+        const migratedChatStats = {};
+
+        Object.entries(chatStats).forEach(([chatId, chatData]) => {
+            if (chatData && typeof chatData === "object")
+            {
+                migratedChatStats[chatId] = chatData;
+            }
+        });
+
+        return migratedChatStats;
+    }
+
+    if (chatStats && typeof chatStats === "object")
+    {
+        return chatStats;
+    }
+
+    return {};
+}
+
 function normalizeCharacterStat(stat)
 {
     if (!stat || typeof stat !== "object")
@@ -26,22 +50,15 @@ function normalizeCharacterStats(stats)
 
 function getChatOwner()
 {
-    const characterData = getDataFor("chat_data", []);
+    const storedChatStats = getDataFor("chat_data", {});
+    const normalizedChatStats = normalizeChatStatsStore(storedChatStats);
 
-    if (Array.isArray(characterData))
-        return characterData;
-
-    if (characterData && typeof characterData === "object")
+    if (storedChatStats !== normalizedChatStats)
     {
-        const migratedProfiles = Object.values(characterData)
-            .filter(profile => profile && typeof profile === "object");
-        saveCharacterData(migratedProfiles);
-        logInfo("Migrated profiles storage to array format.");
-        return migratedProfiles;
+        saveChatStats(normalizedChatStats);
     }
 
-    saveCharacterData([]);
-    return [];
+    return normalizedChatStats;
 }
 
 function getActiveChatId()
@@ -51,18 +68,18 @@ function getActiveChatId()
 }
 
 // Format:
-// chat_data: [
+// chat_data: {
 //   "example_chat_id":{
 //      "example_character": [
 //          { name: "Health", value: 100, delta: 0 },
 //          { name: "Mana", value: 50, delta: 0 }
 //      ]
 //   },
-// ]
+// }
 
 function getChatStats()
 {
-    return getChatOwner() || [];
+    return getChatOwner() || {};
 }
 
 function saveChatStats(stats)
