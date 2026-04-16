@@ -1,3 +1,7 @@
+# DO NOT USE
+### This extension is currently in... well probably Alpha, thus it is not suggested to use it until it is finished.
+### Planned Stable by: Next week (assuming nothing happens to me IRL that would postpone it)
+
 # Smarter RPG
 Ive always wanted an RPG system in SillyTavern, and after many-a-failed attempt i just gave up, but i got the motivation one night to do it, this branch is made with next to no AI involvement unlike the main branch. AI only assisted in resolving bugs to speed up development.
 
