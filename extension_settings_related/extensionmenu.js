@@ -1,4 +1,4 @@
-import { extensionFolderPath } from "../constants.js";
+import { extensionFolderPath, getExtensionSettings, saveSettings } from "../constants.js";
 import { addProfile, deleteProfile, getProfileByName, getProfiles, saveProfile, setActiveProfile } from "../data_storage/profile_constants.js";
 import { logInfo, toastInfo } from "../extensionLogging.js";
 import { reloadProfileMenu } from "../profile_setting_related/setup_profile_menu.js";
@@ -13,6 +13,41 @@ async function setupExtensionMenu(settingsExtensionContainer)
 
 async function setupProfileSelectMenu(settingsExtensionContainer, profileContainer)
 {
+    const profileExport = profileContainer.find("#statai-export-profile-button");
+    const profileImport = profileContainer.find("#statai-import-profile-button");
+    console.log(profileExport, profileImport);
+    profileExport.on("click", () => {
+        const settings = getExtensionSettings();
+        navigator.clipboard.writeText(JSON.stringify(settings))
+            .then(function () {
+                toastInfo("Profile settings copied to clipboard.");
+                console.log("Exported Settings");
+            })
+            .catch(function (err) {
+                console.error('Error copying text: ', err);
+                alert('Failed to copy settings to clipboard. Please allow clipboard access and try again.');
+            });
+    });
+    profileImport.on('click', async function() {
+        let text = "";
+        try {
+            text = await navigator.clipboard.readText();
+        } catch (err) {
+            console.error('Failed to read clipboard:', err);
+            alert('Please allow clipboard access to use the import feature.');
+        }
+        if (!text) return;
+        const settings = JSON.parse(text);
+        if (settings && settings.profiles)
+        {
+            if (confirm("Importing profiles will overwrite your existing profiles. Do you want to continue?"))
+            {
+                saveSettings(settings)
+            }
+        }
+    });
+
+
     const profileSelect = profileContainer.find("#statai-profile-selection");
     const profileAddButton = profileContainer.find("#statai-create-profile-button");
     const profileDeleteButton = profileContainer.find("#statai-delete-profile-button");
@@ -85,7 +120,6 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
     })
     await setupStatsMenu(settingsExtensionContainer, profileContainer);
 }
-
 async function setupStatsMenu(settingsExtensionContainer, profileContainer) {
     const profileSelect = profileContainer.find("#statai-profile-selection");
 
