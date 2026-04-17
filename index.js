@@ -60,11 +60,13 @@ jQuery(async () => {
       {
         toastError("Auxil is not online. Please start Auxil and re-enable the extension to use the Smarter RPG extension.", {}, 10);
         $(this).prop("checked", false); // Uncheck the toggle since Auxil is required for AI features.
+        return;
       }
       else if (!await checkOllamaStatus())
       {
         toastError("Ollama is not online. Please start Ollama and re-enable the extension to use the Smarter RPG extension.", {}, 10);
         $(this).prop("checked", false); // Uncheck the toggle since Ollama is required for AI features.
+        return;
       }
     }
     setActive(enabled);
