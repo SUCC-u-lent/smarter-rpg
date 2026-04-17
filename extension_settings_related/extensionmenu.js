@@ -1,6 +1,7 @@
 import { extensionFolderPath } from "../constants.js";
 import { addProfile, deleteProfile, getProfileByName, getProfiles, saveProfile, setActiveProfile } from "../data_storage/profile_constants.js";
 import { logInfo, toastInfo } from "../extensionLogging.js";
+import { reloadProfileMenu } from "../profile_setting_related/setup_profile_menu.js";
 
 async function setupExtensionMenu(settingsExtensionContainer) 
 {
@@ -42,6 +43,7 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
             profileSelect.append(newOption);
             profileSelect.val(newProfileName).trigger("change");
             addProfile(newProfileName,true)
+            reloadProfileMenu();
         }
         else
         {
@@ -66,6 +68,7 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
             alert("Cannot delete the default profile.");
             return;
         }
+        reloadProfileMenu();
         selectedProfile.remove();
         deleteProfile(profileName);
         profileSelect.val("selectionprofile").trigger("change");
@@ -77,6 +80,7 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
             setActiveProfile(null);
             deleteProfile("all");
             profileSelect.val("selectionprofile").trigger("change");
+            reloadProfileMenu();
         }
     })
     await setupStatsMenu(settingsExtensionContainer, profileContainer);

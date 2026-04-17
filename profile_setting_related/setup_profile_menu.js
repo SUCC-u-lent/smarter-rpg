@@ -3,13 +3,34 @@ import { getCharacterData, saveCharacterData } from "../data_storage/character_c
 import { getProfiles } from "../data_storage/profile_constants.js";
 import { logInfo } from "../extensionLogging.js";
 
+export function reloadProfileMenu()
+{
+    let $profileSelect = $("#statai-profile-select");
+    if ($profileSelect.length === 0)
+    {
+        $profileSelect = $(`<select id="statai-profile-select" style="background-color:black;color:white;margin-top:10px;"></select>`);
+        $("#right-nav-panel").find("#rm_ch_create_block").find("#form_create").append($profileSelect);  
+    }
+    const profiles = getProfiles();
+
+    $profileSelect.empty();
+    $profileSelect.append(`<option value="" title="No stat profile.">Select Profile</option>`);
+    setSelectedProfileInMenu();
+
+    profiles.forEach(profile => {
+        let statLines = new Set();
+        statLines.add(`Stats for profile: ${profile.name}`);
+        profile.stats.forEach(stat => {
+            statLines.add(`${stat.name}: ${stat.default}`);
+        });
+        $profileSelect.append(`<option value="${profile.name}" title="${Array.from(statLines).join("\n")}">${profile.name}</option>`);
+    });
+    return $profileSelect;
+}
+
 export function setupCharacterProfileMenu()
 {
-    const $profileSelect = $(`<select id="statai-profile-select" style="background-color:black;color:white;margin-top:10px;"><option value="">Select Profile</option></select>`);
-    const profiles = getProfiles();
-    profiles.forEach(profile => {
-        $profileSelect.append(`<option value="${profile.name}">${profile.name}</option>`);
-    });
+    const $profileSelect = reloadProfileMenu();
 
     setSelectedProfileInMenu();
 
@@ -17,7 +38,6 @@ export function setupCharacterProfileMenu()
         const selectedProfileName = $(this).val();
         setActiveForCharacter(selectedProfileName);
     });
-    $("#right-nav-panel").find("#rm_ch_create_block").find("#form_create").append($profileSelect);
 
     // Create listener for character name change in #character_popup_text h3
     const characterNameElement = document.querySelector("#character_popup_text h3");
