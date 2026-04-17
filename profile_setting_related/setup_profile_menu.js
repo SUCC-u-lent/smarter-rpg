@@ -1,99 +1,157 @@
 import { reloadDisplays } from "../chat_mini_display/message_display.js";
+import { event_types, eventSource } from "../../../../events.js";
 import { getCharacterData, saveCharacterData } from "../data_storage/character_config.js";
 import { getProfiles } from "../data_storage/profile_constants.js";
 import { logInfo } from "../extensionLogging.js";
 
-export function reloadProfileMenu()
+let profileMenuEventsBound = false;
+
+function getCurrentEditedCharacterName()
 {
-    let $profileSelect = $("#statai-profile-select");
-    if ($profileSelect.length === 0)
+    const rightNavName = $("#rm_button_selected_ch .interactable h2").first().text().trim();
+    if (rightNavName) return rightNavName;
+
+    const popupName = $("#character_popup_text h3").first().text().trim();
+    if (popupName) return popupName;
+
+    return null;
+}
+
+export function reloadProfileMenus()
+{
+    setupCharacterProfilePanel();
+    setupPersonaProfilePanel();
+}
+
+function setupCharacterProfilePanel()
+{
+    const characterEditPanel = $("#rm_ch_create_block");
+    if (characterEditPanel.length === 0)
     {
-        $profileSelect = $(`<select id="statai-profile-select" style="background-color:black;color:white;margin-top:10px;"></select>`);
-        $("#right-nav-panel").find("#rm_ch_create_block").find("#form_create").append($profileSelect);  
+        const characterSelectMenu = $("#statai-character-profile-select-menu");
+        if (characterSelectMenu.length === 0) return;
+        characterSelectMenu.remove();
+        return;
     }
+    let characterSelectMenu = $("#statai-character-profile-select-menu");
+    if (characterSelectMenu.length === 0)
+    {
+        characterEditPanel.append(`<select id="statai-character-profile-select-menu">
+        </select>`);
+        characterSelectMenu = $("#statai-character-profile-select-menu");
+    }
+    characterSelectMenu.empty();
+    characterSelectMenu.append(`<option value="">Select Profile</option>`);
     const profiles = getProfiles();
-
-    $profileSelect.empty();
-    $profileSelect.append(`<option value="" title="No stat profile.">Select Profile</option>`);
-    setSelectedProfileInMenu();
-
-    profiles.forEach(profile => {
-        let statLines = new Set();
-        statLines.add(`Stats for profile: ${profile.name}`);
-        profile.stats.forEach(stat => {
-            statLines.add(`${stat.name}: ${stat.default}`);
-        });
-        $profileSelect.append(`<option value="${profile.name}" title="${Array.from(statLines).join("\n")}">${profile.name}</option>`);
+    profiles.forEach(profile=>{
+        characterSelectMenu.append(`<option value="${profile.name}">${profile.name}</option>`);
     });
-    return $profileSelect;
+    const characterId = getCharacterId();
+    const characterData = characterId ? (getCharacterData(characterId) || {}) : {};
+    const profileName = characterData?.activeProfile;
+    if (characterId && profileName && profiles.some(p=>p.name === profileName))
+    {
+        characterSelectMenu.val(profileName);
+    } else {
+        characterSelectMenu.val("");
+    }
+}
+function setupPersonaProfilePanel()
+{
+    const personaPanel = $(".persona_management_current_persona").first();
+    if (personaPanel.length === 0) return;
+    let personaSelectMenu = $("#statai-persona-profile-select-menu");
+    if (personaSelectMenu.length === 0)
+    {
+        personaPanel.append(`<select id="statai-persona-profile-select-menu">
+        </select>`);
+        personaSelectMenu = $("#statai-persona-profile-select-menu");
+    }
+    personaSelectMenu.empty();
+    personaSelectMenu.append(`<option value="">Select Profile</option>`);
+    const profiles = getProfiles();
+    profiles.forEach(profile=>{
+        personaSelectMenu.append(`<option value="${profile.name}">${profile.name}</option>`);
+    });
+    const characterId = getCharacterId(true);
+    if (!characterId) return;
+    const characterData = getCharacterData(characterId) || {};
+    const profileName = characterData.activeProfile;
+    if (profileName && profiles.some(p=>p.name === profileName))
+    {
+        personaSelectMenu.val(profileName);
+    } else {
+        personaSelectMenu.val("");
+    }
+}
+
+function getCharacterId(isPersona = false)
+{
+    if (isPersona)
+    {
+        const personaPanel = $(".persona_management_current_persona").first();
+        const characerName = personaPanel.find("#your_name").text().trim();
+        return characerName;
+    }
+    return getCurrentEditedCharacterName();
+}
+
+function onCharacterProfileChange(characterId, profileName, isPersona = false)
+{
+    console.log("Profile change detected:", { characterId, profileName, isPersona });
+    const characterData = getCharacterData(characterId) || { name: characterId };
+    const profiles = getProfiles();
+    if (!profileName) {
+        characterData.activeProfile = null;
+        saveCharacterData(characterData);
+        logInfo(`Cleared profile for ${isPersona ? "persona" : "character"} '${characterId}'.`);
+        reloadDisplays();
+        return;
+    }
+
+    if (!profiles.some(p=>p.name === profileName)) return;
+    characterData.name = characterId;
+    characterData.activeProfile = profileName;
+    saveCharacterData(characterData);
+    logInfo(`Loaded profile '${profileName}' for ${isPersona ? "persona" : "character"} '${characterId}'.`);
+    reloadDisplays();
 }
 
 export function setupCharacterProfileMenu()
 {
-    const $profileSelect = reloadProfileMenu();
+    reloadProfileMenus();
 
-    setSelectedProfileInMenu();
+    if (profileMenuEventsBound)
+    {
+        return;
+    }
 
-    $profileSelect.on("change", function() {
+    profileMenuEventsBound = true;
+
+    $(document).off("change", "#statai-character-profile-select-menu");
+    $(document).on("change", "#statai-character-profile-select-menu", function() {
         const selectedProfileName = $(this).val();
-        setActiveForCharacter(selectedProfileName);
+        const currentCharacterId = getCharacterId(false);
+        if (!currentCharacterId) {
+            console.warn("Character profile change ignored: could not resolve current character name.");
+            return;
+        }
+        onCharacterProfileChange(currentCharacterId, selectedProfileName, false);
     });
 
-    // Create listener for character name change in #character_popup_text h3
-    const characterNameElement = document.querySelector("#character_popup_text h3");
-    if (characterNameElement)
-    {
-        const observer = new MutationObserver(() => {
-            setSelectedProfileInMenu();
-        });
-        observer.observe(characterNameElement, { childList: true });
-    }
-}
+    $(document).off("change", "#statai-persona-profile-select-menu");
+    $(document).on("change", "#statai-persona-profile-select-menu", function() {
+        const selectedProfileName = $(this).val();
+        const currentPersonaId = getCharacterId(true);
+        if (!currentPersonaId) {
+            console.warn("Persona profile change ignored: could not resolve current persona name.");
+            return;
+        }
+        onCharacterProfileChange(currentPersonaId, selectedProfileName, true);
+    });
 
-function getCurrentlyEditingCharacterName()
-{
-    const characterName = document.querySelector("#character_popup_text h3");
-    return characterName ? characterName.textContent : null;
-}
-
-function setSelectedProfileInMenu()
-{
-    const $profileSelect = $("#statai-profile-select");
-    const characterName = getCurrentlyEditingCharacterName();
-    if (!characterName){
-        $profileSelect.val("");
-        console.warn("Could not determine the character being edited, cannot set profile select.");
-        return;
-    }
-    const characterData = getCharacterData(characterName);
-
-    console.log(characterData);
-    console.log(characterData == null ? "N/A" : characterData.activeProfile)
-    console.log("Available profiles in select:", $profileSelect.find("option").map((i, option) => option.value).get());
-
-    if (characterData && characterData.activeProfile && $profileSelect.find(`option[value="${characterData.activeProfile}"]`).length > 0)
-    {
-        $profileSelect.val(characterData.activeProfile);
-        console.log("Set profile select to active profile:", characterData.activeProfile);
-    } else {
-        $profileSelect.val("");
-        console.warn("No active profile for character or profile not found, set select to default.");
-    }
-}
-
-function setActiveForCharacter(profileName)
-{
-    const characterName = getCurrentlyEditingCharacterName();
-    if (!characterName)
-    {
-        alert("Could not determine the character being edited.");
-        console.warn("Could not determine the character being edited.");
-        return;
-    }
-    const characterData = getCharacterData(characterName) || { name: characterName };
-    characterData.name = characterName;
-    characterData.activeProfile = profileName || null;
-    saveCharacterData(characterData);
-    logInfo(`Set active profile for character ${characterName} to ${profileName}.`);
-    reloadDisplays();
+    eventSource.on(event_types.CHARACTER_EDITOR_OPENED, reloadProfileMenus);
+    eventSource.on(event_types.CHARACTER_PAGE_LOADED, reloadProfileMenus);
+    eventSource.on(event_types.PERSONA_CHANGED, reloadProfileMenus);
+    eventSource.on(event_types.SETTINGS_UPDATED, reloadProfileMenus);
 }

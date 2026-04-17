@@ -1,21 +1,36 @@
-import { logInfo } from "./extensionLogging.js";
+import { logInfo, toastError } from "./extensionLogging.js";
 import { extensionFolderPath, isActive, setActive, getPosition, setPosition } from "./constants.js";
 import { setupExtensionMenu } from "./extension_settings_related/extensionmenu.js";
 import { setupCharacterProfileMenu } from "./profile_setting_related/setup_profile_menu.js";
 import { reloadDisplays, setupMessageObserver } from "./chat_mini_display/message_display.js";
 import { setupChatEventHandler } from "./chat_embed/chat_event_handler.js";
 import { setupToolVisual } from "./extension_wand/tool_visual.js";
+import { setupExtensionConnectivity } from "./connectivity/extensionConnectivity.js";
+import { checkAuxilStatus, checkOllamaStatus, setupEventListeners } from "./ai_handler/aiBackend.js";
 
 jQuery(async () => {
+  if (!await checkAuxilStatus())
+  {
+    toastError("Auxil is not online. Please start Auxil and refresh the page to use the Smarter RPG extension.", {}, 10);
+    return;
+  }
+  if (!await checkOllamaStatus())
+  {
+    toastError("Ollama is not online. Please start Ollama and refresh the page to use the Smarter RPG extension.", {}, 10);
+    return;
+  }
+
   const settingsHtml = await $.get(`${extensionFolderPath}/html/example.html`);
   const $settings = $(settingsHtml);
   $("#extensions_settings2").append($settings); // Append to the right settings column
   const $settingsContainer = $settings.find(".inline-drawer-content").first();
   setupExtensionMenu($settingsContainer);
+  setupExtensionConnectivity($settingsContainer)
   setupCharacterProfileMenu();
   setupMessageObserver();
   setupChatEventHandler();
   setupToolVisual();
+  setupEventListeners()
 
   $("#statai-enabled-toggle").prop("checked", isActive()).trigger("change"); // Set the toggle based on the current active state.
   $("#statai-visual-position-selection").val(getPosition()).trigger("change"); // Set the dropdown based on the current position setting.

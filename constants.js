@@ -30,7 +30,15 @@ function saveSettings(settings)
 }
 function getSetting(key, defaultValue) { return isKeyPresent(key) ? getExtensionSettings()[key] : defaultValue; }
 function setSetting(key, value) { getExtensionSettings()[key] = value; }
-
+function hashCode(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0; // Convert to 32-bit integer
+  }
+  return hash;
+}
 export {
     extensionName,
     extensionFolderPath,
@@ -43,5 +51,6 @@ export {
     getSetting,
     setSetting,
     getPosition,
-    setPosition
+    setPosition,
+    hashCode
 }

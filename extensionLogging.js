@@ -25,5 +25,14 @@ function toastInfo(message, data = {}, timeout = 3) {
         ...data
     });
 }
+function toastError(message, data = {}, timeout = 3) {
+    toastr.error(message, "Smarter RPG", {
+        timeOut: timeout * 1000,
+        extendedTimeOut: (timeout / 2) * 1000, // After hovering it will disappear twice as fast.
+        closeButton: true,
+        progressBar: true,
+        ...data
+    });
+}
 
-export { logInfo, logWarn, logError, toastInfo };
+export { logInfo, logWarn, logError, toastInfo, toastError };

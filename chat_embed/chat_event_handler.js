@@ -1,9 +1,11 @@
 import { event_types, eventSource } from "../../../../events.js";
 import { getContext } from "../../../../extensions.js";
 import { getCharacterStatForActiveChat } from "../chat_mini_display/chat_storage.js";
+import { getMessagePrompt } from "../connectivity/extensionConnectivity.js";
 import { isActive } from "../constants.js";
 import { getCharacterData } from "../data_storage/character_config.js";
 import { getProfileByName, getProfiles } from "../data_storage/profile_constants.js";
+import { getPlaceholderValue } from "../placeholderConstants.js";
 
 function setupChatEventHandler() 
 {
@@ -128,13 +130,10 @@ function buildStatDescriptionText()
 // - Never mention stats or calculations in dialogue or narration.
 // The above text is ~142 tokens, it can be more or less, users can reduce token usage by decreasing the length of the stat name and description
 
-function buildGlobalStatLine()
+function getChatCharacterStatsString()
 {
-    const descriptionText = buildStatDescriptionText();
+    const characterStats = new Set();
     const charactersInChat = getCharactersInChat();
-    const statLines = [];
-    statLines.push(`[Stat Descriptions]\n${descriptionText}`);
-    console.log("Characters in chat:", charactersInChat);
     charactersInChat.forEach(characterName => {
         const characterProfile = getCharacterData(characterName)?.activeProfile;
         if (!characterProfile) return;
@@ -154,15 +153,25 @@ function buildGlobalStatLine()
         }
 
         const statLine = resolvedStats.join(', ');
-        statLines.push(`[${characterName}'s Stats: ${statLine}]`);
+        characterStats.add(`[${characterName}'s Stats: ${statLine}]`);
     });
-    if (statLines.length === 1) return ''; // No stats to show, only the description header which isn't useful on its own.
-    statLines.push(`[System Behavior]
-- Stats must always influence character actions, dialogue, and outcomes.
-- Higher stats subtly dominate interactions without explicitly referencing numbers.
-- Differences in stats should be reflected through tone, success, hesitation, or failure.
-- Never mention stats or calculations in dialogue or narration.`); // This is to make sure the AI doesn't just ignore the stats and then when it does use them it doesn't say "I rolled a 15 for stealth which is higher than your 10 so I sneak past you" instead it should be more like "I attempt to sneak past you, my movements are silent and calculated. You barely notice me as I slip by, my superior stealth allowing me to remain undetected." This is of course an example but the point is to make sure the AI doesn't break immersion by referencing the stats directly in the output.
-    return statLines.join('\n');
+    return characterStats;
 }
 
-export { setupChatEventHandler };
+function buildGlobalStatLine()
+{
+    const descriptionText = buildStatDescriptionText();
+    const charactersInChat = getCharactersInChat();
+    const characterStats = getChatCharacterStatsString();
+    let characterFormatString = getMessagePrompt()
+    characterFormatString = characterFormatString.replace('{{stat_descriptions}}', descriptionText);
+    characterFormatString = characterFormatString.replace('{{character_stats}}', Array.from(characterStats).join('\n'));
+    return characterFormatString;
+}
+
+export { 
+    setupChatEventHandler,
+    buildStatDescriptionText,
+    getCharactersInChat,
+    getChatCharacterStatsString
+};

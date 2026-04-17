@@ -1,6 +1,7 @@
 import { event_types, eventSource } from "../../../../events.js";
 import { callGenericPopup, POPUP_TYPE } from "../../../../popup.js";
 import { extensionFolderPath } from "../constants.js";
+import { sendGenerationRequest } from "../ai_handler/aiBackend.js";
 
 async function doToolSetup()
 {
@@ -9,10 +10,11 @@ async function doToolSetup()
     </div>`);
     
     container.append(`
-        <span>Stat Name: </span><input class="statai-input" id="tool_stat_name" type="number"/><br/>
+        <span>Stat Name: </span><input class="statai-input" id="tool_stat_name" type="text"/><br/>
         <span>Stat Description: </span><input class="statai-input" id="tool_stat_description" type="text"/><br/>
-        <span>Stat Value: </span><input class="statai-input" id="tool_stat_value" type="text"/><br/>
+        <span>Stat Value: </span><input class="statai-input" id="tool_stat_value" type="number"/><br/>
         <span>Example Message: </span><textarea id="tool_example_message" placeholder="The messages to be evaluated by the AI, in their raw format, so characters have to have their names included"></textarea><br/>
+        <span>Prompt: </span><textarea id="tool_prompt" placeholder="The messages to be evaluated by the AI, in their raw format, so characters have to have their names included"></textarea><br/>
         <input class="statai-input" type="button" id="tool_submit_request" value="Submit Request"/><br/>
         <span>Stat Output: </span><textarea id="tool_stat_output" disabled placeholder="The output of the AI evaluation for the given stat" title="The output area the AI response will be displayed in. Cannot be edited."></textarea>
     `);
@@ -23,9 +25,24 @@ async function doToolSetup()
         const statDescription = $("#tool_stat_description").val();
         const statValue = $("#tool_stat_value").val();
         const exampleMessage = $("#tool_example_message").val();
-        // No prompt system yet.
+        let prompt = $("#tool_prompt").val();
         submitButton.prop("disabled", true); // Disabled until the response is recieved.
         submitButton.prop("title","Waiting for response...");
+        prompt = prompt.replaceAll("{{statName}}", statName)
+        .replaceAll("{{statDescription}}", statDescription)
+        .replaceAll("{{statValue}}", statValue)
+        .replaceAll("{{exampleMessages}}", exampleMessage);
+        sendGenerationRequest(prompt)
+            .then(response => {
+                $("#tool_stat_output").val(response.response);
+                submitButton.prop("disabled", false);
+                submitButton.prop("title","");
+            })
+            .catch(error => {
+                $("#tool_stat_output").val(`Error: ${error.message}`);
+                submitButton.prop("disabled", false);
+                submitButton.prop("title","");
+            });
     });
 
     callGenericPopup(container, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });

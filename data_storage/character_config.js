@@ -26,6 +26,12 @@ function saveAllCharacterData(data)
     saveDataFor("character_data", data);
 }
 
+// Schema:
+// {
+//     name: string,
+//     activeProfile: string (optional),
+// }
+
 function getCharacterData(characterName)
 {
     const allCharacterData = getAllCharacterData();

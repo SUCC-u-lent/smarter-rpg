@@ -1,4 +1,6 @@
-import { characters } from "../../../../../script.js";
+// @ts-nocheck
+import { characters, event_types, eventSource, name1 } from "../../../../../script.js";
+import { power_user } from "../../../../power-user.js";
 import { extensionFolderPath, getPosition, isActive } from "../constants.js";
 import { getCharacterData } from "../data_storage/character_config.js";
 import { getProfiles } from "../data_storage/profile_constants.js";
@@ -7,6 +9,7 @@ import { getCharacterStatForActiveChat, saveCharacterStatForActiveChat } from ".
 
 let messageObserver = null;
 let messageContainerPollId = null;
+let generatingState = false;
 
 function getMessages()
 {
@@ -55,11 +58,18 @@ async function setupMessageObserver()
     });
     messageObserver.observe(messageContainer, { childList: true });
     renderDisplays(); // Initial render for existing messages.
+    eventSource.on(event_types.MESSAGE_DELETED, ()=>{renderDisplays();});
+}
+
+export function setGeneratingState(isGenerating)
+{
+    generatingState = isGenerating;
+    reloadDisplays();
 }
 
 export function reloadDisplays()
 {
-    renderDisplays();
+    renderDisplays()
 }
 
 const positionParentSelector = {
@@ -69,16 +79,34 @@ const positionParentSelector = {
 
 function prepareVisuals(characterName, messageElement)
 {
-    const stCharacterData = getSTCharacterDataFromName(characterName);
-    if (!characterName || !stCharacterData) return;
+    const normalizedCharacterName = String(characterName || "").trim();
+    if (!normalizedCharacterName) return null;
+
+    // Ignore unresolved template placeholders and macro-like names.
+    if ((normalizedCharacterName.startsWith("${") && normalizedCharacterName.endsWith("}"))
+        || (normalizedCharacterName.startsWith("{{") && normalizedCharacterName.endsWith("}}"))) {
+        return null;
+    }
+
+    const stCharacterData = getSTCharacterDataFromName(normalizedCharacterName);
+    if (!stCharacterData) {
+        console.warn(`Could not find character data for character '${normalizedCharacterName}'. Stats will not be displayed for this character.`, { characterName: normalizedCharacterName, stCharacterData });
+        return null;
+    }
 
     const position = getPosition();
     const parentSelector = positionParentSelector[position];
-    if (!parentSelector) return;
+    if (!parentSelector) {
+        console.error(`Invalid position '${position}' for stat display.`, { position, validPositions: Object.keys(positionParentSelector) });
+        return null;
+    }
 
     const $messageElement = $(messageElement);
     const characterDisplay = $messageElement.find(parentSelector).first();
-    if (characterDisplay.length === 0) return;
+    if (characterDisplay.length === 0) {
+        console.warn(`Could not find parent element for stat display with selector '${parentSelector}' for character '${normalizedCharacterName}'. Stats will not be displayed for this character.`, { parentSelector, characterName: normalizedCharacterName, messageElement });
+        return null;
+    }
 
     let displayElement = $messageElement.find(".statai-stat-display");
     let breaklineElement = $messageElement.find("#statai-message-hr");
@@ -105,13 +133,13 @@ function renderDisplays()
 {
     const isActiveState = isActive();
     const characterMessages = {};
-    getMessages().each((index, messageElement) => {
-        // only setup stats if there is a character associated with the message and this is the latest message from that character.
+    const messages = getMessages();
+    messages.each((index, messageElement) => {
         const characterName = getCharacterFromMessage(messageElement);
         if (!characterName) return;
         const preparedVisuals = prepareVisuals(characterName, messageElement);
         if (!preparedVisuals) return;
-        const displayElement = preparedVisuals.displayElement; // Manual destructuring as html based javascript does not accept single line destructuring.
+        const displayElement = preparedVisuals.displayElement;
         const breaklineElement = preparedVisuals.breaklineElement;
         if (!displayElement || !breaklineElement) return;
         if (!isActiveState)
@@ -130,6 +158,13 @@ function renderDisplays()
     {
         const spanStyle = `font-weight: bold; width: calc(${Math.max(1, String("No Stats").length)}ch)`
         const $displayElement = $(characterMessages[characterName]);
+        if (generatingState)
+        { // When generating status displays are changed to just show "Generating..." to avoid confusion from rapidly changing stats during generation.
+            $displayElement.empty().append(
+                `<span style="${spanStyle}">Generating...</span>`
+            )
+            continue;
+        }
         const characterData = getCharacterData(characterName);
         if (!characterData || characterData.activeProfile == null)
         {
@@ -157,24 +192,34 @@ function renderDisplays()
                     <span class="statai-stat-delta" title="Not sent to the AI."></span>
                 </div>
             `);
-            const statData = getCharacterStatForActiveChat(characterName, characterData.activeProfile, stat.name);
+            const statData = getCharacterStatForActiveChat(characterName, characterData.activeProfile, stat.name) || {
+                name: stat.name,
+                value: stat.default,
+                delta: 0
+            };
             let value = statData?.value ?? stat.default;
             let delta = statData?.delta ?? 0;
+            let maxRange = stat.max ?? Infinity;
+            let minRange = stat.min ?? -Infinity;
+            const unlimitedRange = (maxRange === Infinity && minRange === -Infinity);
             statElement.find(".statai-stat-name").text(stat.name + ": ");
             const valueInput = statElement.find(".statai-stat-value");
             valueInput.val(value);
             valueInput.css("width", `calc(${Math.max(1, String(value).length)}ch + 5px)`);
-            if (stat.type == "range")
+            if (stat.type == "range" && !unlimitedRange)
             {
                 valueInput.prop("max", maxRange);
                 valueInput.prop("min", minRange);
             }
             valueInput.on("change", function() {
                 let newValue = $(this).val();
-                if (newValue > stat.max)
-                    newValue = stat.max;
-                if (newValue < stat.min)
-                    newValue = stat.min;
+                if (stat.type == "range" && !unlimitedRange)
+                {
+                    if (newValue > maxRange)
+                    {newValue = maxRange;}
+                    if (newValue < minRange)
+                    {newValue = minRange;}
+                }
                 $(this).css("width", `calc(${Math.max(1, String(newValue).length)}ch + 5px)`);
                 statData.value = newValue;
                 saveCharacterStatForActiveChat(characterName, stat.name, statData);
@@ -200,7 +245,32 @@ function getProfileStats(profileName)
 function getSTCharacterDataFromName(characterName)
 {
     if (!characterName) return null;
-    return characters.find(character => character.name === characterName);
+
+    const normalizedName = String(characterName).trim().toLowerCase();
+    const char = characters.find(character => String(character?.name || "").trim().toLowerCase() === normalizedName);
+    if (char) return char;
+
+    // Current active user name should always be recognized as a persona identity.
+    if (String(name1 || "").trim().toLowerCase() === normalizedName)
+    {
+        return { name: characterName, kind: "persona" };
+    }
+
+    // Resolve personas directly from the persona mapping.
+    // Keys may be avatar IDs, filenames, or URLs depending on ST internals.
+    const personaEntries = Object.entries(power_user?.personas || {});
+
+    for (const [avatarId, personaName] of personaEntries)
+    {
+        if (!personaName) continue;
+
+        if (String(personaName).trim().toLowerCase() === normalizedName)
+        {
+            return { name: personaName, avatarId, kind: "persona" };
+        }
+    }
+
+    return null;
 }
 
 function getCharacterFromMessage(messageElement)

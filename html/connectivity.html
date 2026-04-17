@@ -1,0 +1,19 @@
+<div>
+    <h2>Connectivity</h2>
+    <button class="statai-button" id="statai-reset-ai-prompt">Reset</button>
+    <label>Macros:
+        <br/><code>{{stat_descriptions}}</code> - A list of the stat names and their descriptions, all stats are provided regardless if they are relavant to the current response.
+        <br/><code>{{character_stats}}</code> - A list of the character's current stat values, only stats that are relevant to the current response are provided.
+        <br/><code>{{history}}</code> - The recent history of the conversation. Can be used to provide context on what has recently happened in the conversation.
+        <br/><code>{{prompt}}</code> - The current user prompt that the main AI is responding to. Can be used to provide additional context on what the main AI is responding to.
+        <br/><code>{{exampleJsonLayout}}</code> - An example JSON layout that the AI should follow when responding. (REQUIRED)
+    </label>
+    <textarea id="statai-ai-prompt" placeholder="The prompt sent to Auxil."></textarea>
+    <button class="statai-button" id="statai-reset-message-prompt">Reset</button>
+    <label>Provide stat descriptions through: <code>{{stat_descriptions}}</code> And character stats through: <code>{{character_stats}}</code></label>
+    <textarea id="statai-message-prompt" placeholder="The prompt inserted directly into the main AI's message"></textarea>
+    <button class="statai-button" id="statai-reset-backend-ip">Reset</button>
+    <input class="statai-input" id="statai-backend-ip" type="text" placeholder="The IP of the backend. e.g http://localhost:3000. Must use Auxil program"/>
+    <button class="statai-button" id="statai-reset-model">Reset</button>
+    <input class="statai-input" id="statai-model" type="text" placeholder="The model to use. e.g gpt-4"/>
+</div>

@@ -59,6 +59,7 @@
     background: none;
     font-size: 0.75em;
 }
+
 input.statai-input[type="number"],
 input.statai-input[type="text"] {
     background-color: black;
@@ -68,6 +69,7 @@ input.statai-input[type="text"] {
     color: white;
 }
 
+button.statai-button,
 input.statai-input[type="button"]
 {
     background-color: black;
