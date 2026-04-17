@@ -52,23 +52,31 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
     console.log(profileExport, profileImport);
     profileExport.on("click", () => {
         const settings = getExtensionSettings();
-        navigator.clipboard.writeText(JSON.stringify(settings))
-            .then(function () {
-                toastInfo("Profile settings copied to clipboard.");
-                console.log("Exported Settings");
-            })
-            .catch(function (err) {
-                fallbackCopyToClipboard(JSON.stringify(settings));
-                console.error('Error copying text: ', err);
-                alert('Failed to copy settings to clipboard. Please allow clipboard access and try again.');
-            });
+        if (navigation.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(JSON.stringify(settings))
+                .then(function () {
+                    toastInfo("Profile settings copied to clipboard.");
+                    console.log("Exported Settings");
+                })
+                .catch(function (err) {
+                    fallbackCopyToClipboard(JSON.stringify(settings));
+                    console.error('Error copying text: ', err);
+                    alert('Failed to copy settings to clipboard. Please allow clipboard access and try again.');
+                });
+        } else {
+            fallbackCopyToClipboard(JSON.stringify(settings));
+        }
     });
     profileImport.on('click', async function() {
         let text = "";
-        try {
-            text = await navigator.clipboard.readText();
-        } catch (err) {
-            console.error('Failed to read clipboard:', err);
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            try {
+                text = await navigator.clipboard.readText();
+            } catch (err) {
+                console.error('Failed to read clipboard:', err);
+                text = await fallbackCopyFromClipboard();
+            }
+        } else {
             text = await fallbackCopyFromClipboard();
         }
         if (!text) return;
