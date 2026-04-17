@@ -1,3 +1,4 @@
+import { callGenericPopup, POPUP_TYPE } from "../../../../popup.js";
 import { extensionFolderPath, getExtensionSettings, saveSettings } from "../constants.js";
 import { addProfile, deleteProfile, getProfileByName, getProfiles, saveProfile, setActiveProfile } from "../data_storage/profile_constants.js";
 import { logInfo, toastInfo } from "../extensionLogging.js";
@@ -9,6 +10,39 @@ async function setupExtensionMenu(settingsExtensionContainer)
     const $profileContainer = $(profileContainer);
     $(settingsExtensionContainer).append($profileContainer);
     setupProfileSelectMenu(settingsExtensionContainer, $profileContainer);
+}
+
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.on("changed", function(){
+        textArea.value = text; // No changing.
+    })
+    callGenericPopup(textArea, POPUP_TYPE.TEXT,"",{ wide: false, large: false, allowVerticalScrolling: true })
+}
+function fallbackCopyFromClipboard() {
+    return new Promise((resolve, reject) => {
+        const textArea = document.createElement("textarea");
+        textArea.append(`<br/>`)
+        textArea.append(`<span>After pasting, click the button below to confirm the import.</span><br/>`);
+        const confirmButton = $(`<button>Confirm Import</button>`);
+        confirmButton.on("click", function() {
+            const importedText = textArea.val();
+            if (!importedText) {
+                alert("No text was pasted. Please paste the exported settings into the text area before confirming.");
+                return;
+            }
+            try{
+                const settings = JSON.parse(importedText);
+                resolve(settings);
+            }catch(err){
+                alert("Failed to parse the imported text. Please ensure you pasted the correct exported settings.");
+                reject(err);
+            }
+        });
+        textArea.append(confirmButton);
+        callGenericPopup(textArea, POPUP_TYPE.TEXT,"",{ wide: false, large: false, allowVerticalScrolling: true })
+    });
 }
 
 async function setupProfileSelectMenu(settingsExtensionContainer, profileContainer)
@@ -24,6 +58,7 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
                 console.log("Exported Settings");
             })
             .catch(function (err) {
+                fallbackCopyToClipboard(JSON.stringify(settings));
                 console.error('Error copying text: ', err);
                 alert('Failed to copy settings to clipboard. Please allow clipboard access and try again.');
             });
@@ -34,7 +69,7 @@ async function setupProfileSelectMenu(settingsExtensionContainer, profileContain
             text = await navigator.clipboard.readText();
         } catch (err) {
             console.error('Failed to read clipboard:', err);
-            alert('Please allow clipboard access to use the import feature.');
+            text = await fallbackCopyFromClipboard();
         }
         if (!text) return;
         const settings = JSON.parse(text);
