@@ -7,6 +7,7 @@ import { setupChatEventHandler } from "./chat_embed/chat_event_handler.js";
 import { setupToolVisual } from "./extension_wand/tool_visual.js";
 import { setupExtensionConnectivity } from "./connectivity/extensionConnectivity.js";
 import { checkAuxilStatus, checkOllamaStatus, setupEventListeners } from "./ai_handler/aiBackend.js";
+import { getPlaceholderValue, setPlaceholderValue } from "./placeholderConstants.js";
 
 jQuery(async () => {
   if (!await checkAuxilStatus())
@@ -34,6 +35,22 @@ jQuery(async () => {
 
   $("#statai-enabled-toggle").prop("checked", isActive()).trigger("change"); // Set the toggle based on the current active state.
   $("#statai-visual-position-selection").val(getPosition()).trigger("change"); // Set the dropdown based on the current position setting.
+  const tempValue = $("#statai-ai-temperature");
+  tempValue.val(getPlaceholderValue("ai_temperature")?.content || 0.7).on("change", function() {
+    const value = parseFloat($(this).val());
+    if (isNaN(value) || value < 0 || value > 2) {
+      toastError("Please enter a valid number between 0 and 2 for AI Temperature.");
+      $(this).val(getPlaceholderValue("ai_temperature")?.content || 0.7);
+      return;
+    }
+    setPlaceholderValue("ai_temperature", {
+      content: value,
+      isDefault: false
+    });
+    logInfo("Smarter RPG AI Temperature set to " + value + ".");
+    $(this).css("width", `calc(${Math.max(1, String($(this).val()).length)}ch + 5px)`);     
+  });
+  tempValue.css("width", `calc(${Math.max(1, String(tempValue.val()).length)}ch + 5px)`); // Set initial width based on value length
 
   $("#statai-enabled-toggle").on("change", function() {
     const enabled = $(this).is(":checked");

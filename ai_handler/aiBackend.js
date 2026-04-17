@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { event_types, eventSource } from "../../../../events.js";
+import { getContext } from "../../../../extensions.js";
 import { buildStatDescriptionText, getCharactersInChat, getChatCharacterStatsString } from "../chat_embed/chat_event_handler.js";
 import { getCharacterStatForActiveChat, saveCharacterStatForActiveChat } from "../chat_mini_display/chat_storage.js";
 import { reloadDisplays, setGeneratingState } from "../chat_mini_display/message_display.js";
@@ -9,6 +10,7 @@ import { getAllCharacterData, getCharacterData } from "../data_storage/character
 import { getProfileByName } from "../data_storage/profile_constants.js";
 import { dumbassDecodeJson } from "../dumbassJsonDecoder.js";
 import { toastError } from "../extensionLogging.js";
+import { getPlaceholderValue } from "../placeholderConstants.js";
 
 const processedMessageFingerprints = new Map();
 const pendingMessageTimers = new Map();
@@ -28,7 +30,7 @@ function resolveCharacterFromMessageAuthor(messageAuthor)
     {
         return {
             characterName: messageAuthor,
-            characterData: directCharacterData || {}
+            characterData: directCharacterData || null
         };
     }
 
@@ -41,13 +43,61 @@ function resolveCharacterFromMessageAuthor(messageAuthor)
     {
         return {
             characterName: messageAuthor,
-            characterData: {}
+            characterData: null
         };
     }
 
     return {
         characterName: fallbackCharacterData.name,
-        characterData: fallbackCharacterData || {}
+        characterData: fallbackCharacterData || null
+    };
+}
+
+function getActiveCharacterName()
+{
+    const context = getContext();
+    const activeCharacterName = String(context?.name2 || "").trim();
+    return activeCharacterName || null;
+}
+
+function getExpectedTargetCharacter(triggerSource, messageAuthor)
+{
+    const activeCharacterName = getActiveCharacterName();
+
+    if (triggerSource === "USER_MESSAGE_RENDERED")
+    {
+        return activeCharacterName || messageAuthor;
+    }
+
+    return messageAuthor || activeCharacterName;
+}
+
+function resolveTargetCharacterForUpdate(preferredCharacterNames)
+{
+    const seenNames = new Set();
+    for (const candidate of preferredCharacterNames)
+    {
+        const normalizedCandidate = String(candidate || "").trim();
+        if (!normalizedCandidate) continue;
+
+        const key = normalizeCharacterName(normalizedCandidate);
+        if (seenNames.has(key)) continue;
+        seenNames.add(key);
+
+        const resolved = resolveCharacterFromMessageAuthor(normalizedCandidate);
+        if (resolved?.characterData?.activeProfile)
+        {
+            return {
+                ...resolved,
+                requestedName: normalizedCandidate
+            };
+        }
+    }
+
+    return {
+        characterName: null,
+        characterData: null,
+        requestedName: null
     };
 }
 
@@ -146,6 +196,36 @@ function getMessageById(messageId)
     return jQueryMessages[messageId] || null;
 }
 
+function isUserMessage(messageElement)
+{
+    if (!messageElement) return false;
+    const isUserAttr = String($(messageElement).attr("is_user") || "").toLowerCase();
+    if (isUserAttr === "true") return true;
+    if (isUserAttr === "false") return false;
+
+    // Fallback for message render variants where the attr is unavailable.
+    const authorName = getMessageAuthor(messageElement);
+    const activeCharacterName = getActiveCharacterName();
+    if (!authorName) return false;
+    if (!activeCharacterName) return false;
+    return normalizeCharacterName(authorName) !== normalizeCharacterName(activeCharacterName);
+}
+
+function findLatestUserMessageId()
+{
+    const messages = getMessages();
+    for (let index = messages.length - 1; index >= 0; index--)
+    {
+        const messageElement = messages[index];
+        if (isUserMessage(messageElement))
+        {
+            return index;
+        }
+    }
+
+    return null;
+}
+
 function getMessageFingerprint(messageElement)
 {
     if (!messageElement) return "";
@@ -189,7 +269,7 @@ function sendStatRequest(messageContent, targetCharacterName){
         console.log("Final AI Prompt:", aiPrompt);
     return sendGenerationRequest(aiPrompt,
         {
-            temperature:1.25
+            temperature:getPlaceholderValue("ai_temperature")?.content || 0.7
         }
     );
 }
@@ -232,27 +312,48 @@ function scheduleStatGeneration(messageId, triggerSource)
     pendingMessageTimers.set(numericMessageId, timer);
 }
 
+const generationLocks = new Set();
+function acquireGenerationLock(messageId)
+{
+    if (generationLocks.has(messageId)) {
+        return false;
+    }
+    generationLocks.add(messageId);
+    return true;
+}
+function releaseGenerationLock(messageId)
+{
+    generationLocks.delete(messageId);
+}
 function onMessageSent(messageId, triggerSource = "unknown")
 {
+    if (!acquireGenerationLock(messageId))
+    {
+        return Promise.resolve();
+    }
     const currentMessage = getMessageById(messageId);
     if (!currentMessage) {
         setGeneratingState(false);
-        return;
+        releaseGenerationLock(messageId);
+        return Promise.resolve();
     }
 
     const rawCharacterName = getMessageAuthor(currentMessage);
     const fingerprint = getMessageFingerprint(currentMessage);
     if (processedMessageFingerprints.get(messageId) === fingerprint)
     {
-        return;
+        releaseGenerationLock(messageId);
+        return Promise.resolve();
     }
 
     const messageContent = getMessageContent(currentMessage);
+    const expectedTargetCharacter = getExpectedTargetCharacter(triggerSource, rawCharacterName);
     setGeneratingState(true)
-    sendStatRequest(messageContent, rawCharacterName).then(httpResponse=>{
+    return sendStatRequest(messageContent, expectedTargetCharacter).then(httpResponse=>{
         const responseText = httpResponse.response;
         const data = dumbassDecodeJson(responseText);
 
+        const aiTargetCharacter = String(data.targetCharacter || "").trim();
         const reasoning = data.reasoning || "No reasoning provided.";
         const stats = data.stats || {};
         const normalizedStats = {};
@@ -268,7 +369,9 @@ function onMessageSent(messageId, triggerSource = "unknown")
         loggingLines.push("AI Generation Result:");
         loggingLines.push(`Trigger: ${triggerSource}`);
         loggingLines.push(`Message Index: ${messageId}`);
-        loggingLines.push(`Target Character: ${rawCharacterName}`);
+        loggingLines.push(`Message Author: ${rawCharacterName}`);
+        loggingLines.push(`Expected Target Character: ${expectedTargetCharacter || "N/A"}`);
+        loggingLines.push(`AI Target Character: ${aiTargetCharacter || "N/A"}`);
         loggingLines.push("Reasoning:");
         loggingLines.push(reasoning);
         loggingLines.push("Stats:");
@@ -286,12 +389,19 @@ function onMessageSent(messageId, triggerSource = "unknown")
             loggingLines.push(`Replacement Message: ${blocked.replacementMessage}`);
         }
 
-        const resolvedCharacter = resolveCharacterFromMessageAuthor(rawCharacterName);
+        const activeCharacterName = getActiveCharacterName();
+        const resolvedCharacter = resolveTargetCharacterForUpdate([
+            aiTargetCharacter,
+            expectedTargetCharacter,
+            activeCharacterName,
+            rawCharacterName
+        ]);
         const characterName = resolvedCharacter.characterName;
         const characterData = resolvedCharacter.characterData;
         if (!characterData || characterData.activeProfile == null) {
-            loggingLines.push(`Character gate failed for message author '${rawCharacterName}'. Resolved name: '${characterName}'.`);
+            loggingLines.push(`Character gate failed. Candidates: [${[aiTargetCharacter, expectedTargetCharacter, activeCharacterName, rawCharacterName].filter(Boolean).join(", ")}].`);
             console.log("Received response from backend!", loggingLines.join('\n'));
+            releaseGenerationLock(messageId);
             return;
         }
         const profileStats = getProfileStats(characterData.activeProfile);
@@ -314,7 +424,19 @@ function onMessageSent(messageId, triggerSource = "unknown")
             const changedValue = Number(rawChangedValue);
             if (Number.isNaN(changedValue) || changedValue === 0) return;
 
-            statData.value = statData.value + changedValue;
+            let currentValue = Number(statData.value);
+            if (Number.isNaN(currentValue)) {
+                const fallbackValue = Number(stat.default ?? statData.default ?? 0);
+                currentValue = Number.isNaN(fallbackValue) ? 0 : fallbackValue;
+            }
+
+            const nextValue = currentValue + changedValue;
+            if (Number.isNaN(nextValue)) {
+                loggingLines.push(`Skipped stat ${stat.name}: computed value became NaN (current=${statData.value}, delta=${changedValue}).`);
+                return;
+            }
+
+            statData.value = nextValue;
             statData.delta = changedValue;
             saveCharacterStatForActiveChat(characterName, stat.name, statData);
             loggingLines.push(`Updated stat ${stat.name} to value ${statData.value} (changed by ${changedValue})`);
@@ -328,6 +450,7 @@ function onMessageSent(messageId, triggerSource = "unknown")
         toastError("An error occurred while generating stats. Please check the console for more details.");
     })
     .finally(()=>{
+        releaseGenerationLock(messageId);
         reloadDisplays();
         setGeneratingState(false)
     });
@@ -335,17 +458,28 @@ function onMessageSent(messageId, triggerSource = "unknown")
 
 function setupEventListeners()
 {
+    // This hook is awaited by SillyTavern, so it can pause generation until stats are updated.
+    eventSource.makeFirst(event_types.GENERATION_STARTED, async (generationType, options, dryRun)=>{
+        if (dryRun) return;
+        if (!isActive()) return;
+
+        const latestUserMessageId = findLatestUserMessageId();
+        if (latestUserMessageId == null) return;
+
+        await onMessageSent(latestUserMessageId, "GENERATION_STARTED_SYNC");
+    });
+
     eventSource.on(event_types.USER_MESSAGE_RENDERED, (messageId)=>{
         scheduleStatGeneration(messageId, "USER_MESSAGE_RENDERED");
     });
     eventSource.on(event_types.MESSAGE_EDITED, (messageId)=>{
         scheduleStatGeneration(messageId, "MESSAGE_EDITED");
     });
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId)=>{
-        scheduleStatGeneration(messageId, "CHARACTER_MESSAGE_RENDERED");
-    });
     eventSource.on(event_types.MESSAGE_SWIPED, (messageId)=>{
         scheduleStatGeneration(messageId, "MESSAGE_SWIPED");
+    });
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId)=>{
+        scheduleStatGeneration(messageId, "CHARACTER_MESSAGE_RENDERED");
     });
 }
 

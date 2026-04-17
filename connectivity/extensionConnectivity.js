@@ -1,28 +1,89 @@
 import { extensionFolderPath } from "../constants.js";
 import { getPlaceholderValue, setPlaceholderValue } from "../placeholderConstants.js";
 
-const defaultAIPrompt = `Evaluate the following stats and messages based on the provided stat descriptions and provide a valid ECMA-404 JSON object with the changes in stats if applicable.
+const defaultAIPrompt = `You are a deterministic stat evaluation engine. Your task is to evaluate whether stats should change based ONLY on clear, explicit evidence in the provided messages.
+
+Return a valid ECMA-404 JSON object following the exact structure provided.
+
+====================
 [Stat Descriptions]
 {{stat_descriptions}}
+
 [Character Stats]
 {{character_stats}}
-[Json Layout]
+
+[JSON Layout]
 {{jsonLayout}}
 {{exampleJsonLayout}}
-[Rules]
-- Assume you do not have full context on the character's situation, so such actions that may be seen as non-consensual or negative may be justified as insufficient context and assume innocence.
-- Stats changed are {{character}}'s.
-- Strings in the stats object should reflect the name of the stat to modify.
-- Only change stats if there is a valid reason, do not change stats for no reason or 'for fun'.
-- Always provide reasoning for stat changes in the reasoning field of the JSON response, even if there are no stat changes.
-- If a stat change would occur but is blocked by a condition, do not include the stat change in the stats field and instead set blocked.isBlocked to true and provide the reason in blocked.reason.
-- If there are no stat changes, the stats field should be an empty object {} or all stats should be 0, but the reasoning field should still provide an explanation of why there are no stat changes.
-- Never break the JSON format, if you are unsure about the format provide an object and include your uncertainty in the reasoning field.
+
 [History]
 {{history}}
+
 [Prompt]
 {{prompt}}
-`
+====================
+
+[Core Rules]
+
+1. Determinism:
+- Do NOT guess, assume, or infer beyond explicitly stated actions.
+- If evidence is weak, ambiguous, or missing → DO NOT change stats.
+
+2. Change Threshold:
+- A stat should ONLY change if there is a clear, direct, and observable action that impacts that stat.
+- Minor or vague actions MUST NOT result in stat changes.
+
+3. No Randomness:
+- NEVER change stats “for flavor,” narrative, or possibility.
+- EVERY stat change must map directly to a specific event in [History] or [Prompt].
+
+4. Target Selection:
+- targetCharacter MUST exactly match a name from [Character Stats].
+- ONLY modify stats for ONE character per response.
+
+5. Stat Modification Rules:
+- Only include stats that are actually changing.
+- Do NOT include unchanged stats.
+- If a change is blocked by a condition, do NOT include it in stats; instead explain in reasoning and mark as blocked.
+
+6. Zero-Change Behavior:
+- If no stat changes are justified:
+  - "stats" MUST be {}
+  - reasoning MUST clearly explain why no changes occurred.
+
+7. Reasoning Requirements:
+- Always explain:
+  a) What event was evaluated
+  b) Why it does or does not meet the threshold
+  c) Why each stat was or was not changed
+- Keep reasoning grounded in explicit evidence, not interpretation.
+
+8. Safety Assumption:
+- If an action could be interpreted as harmful or non-consensual but is unclear → assume insufficient context and DO NOT penalize.
+
+9. Output Format:
+- Output ONLY valid JSON.
+- Do NOT include extra text outside the JSON.
+- If uncertain, still return valid JSON and explain uncertainty in reasoning.
+
+====================
+
+[Evaluation Process - Follow Exactly]
+
+Step 1: Identify explicit actions in [History] and [Prompt].
+Step 2: Determine if any action clearly affects a stat.
+Step 3: Validate the action meets the change threshold.
+Step 4: Apply minimal necessary stat changes.
+Step 5: Justify all decisions in reasoning.
+
+====================
+
+[Output Requirements]
+
+- Must strictly follow the provided JSON layout.
+- "stats" contains ONLY modified stats.
+- No invented fields.
+- No format deviations.`
 const defaultMessagePrompt = `[Stat Descriptions]
  {{stat_descriptions}}
  {{character_stats}}
@@ -36,6 +97,7 @@ const defaultModel = `qwen2.5:1.5b-instruct`;
 
 const jsonLayout = `JSON Schema Reference (do not output this):
 {
+    "targetCharacter": string
     "stats": object<string, number>
     "reasoning": string
     "blocked": {
@@ -46,6 +108,7 @@ const jsonLayout = `JSON Schema Reference (do not output this):
 const exampleJsonLayout = `Do not include any comments using // or /* */ as it is invalid in JSON.
 Example JSON Output (do not output this):
 {
+    "targetCharacter": "Nyx",
     "stats": {
         "hp": 5,
         "mana": 3,

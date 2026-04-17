@@ -189,7 +189,6 @@ function renderDisplays()
                 <div class="statai-stat">
                     <span class="statai-stat-name" style="font-weight: bold;"></span>
                     <input class="statai-stat-value"/>
-                    <span class="statai-stat-delta" title="Not sent to the AI."></span>
                 </div>
             `);
             const statData = getCharacterStatForActiveChat(characterName, characterData.activeProfile, stat.name) || {
@@ -225,11 +224,6 @@ function renderDisplays()
                 saveCharacterStatForActiveChat(characterName, stat.name, statData);
                 toastInfo(`Updated ${stat.name} for ${characterName} to ${newValue}.`,{},10);
             });
-
-            statElement.find(".statai-stat-delta").text(`(${delta > 0 ? "+" : "-"}${Math.abs(delta)})`);
-            if (delta == 0)
-            { statElement.find(".statai-stat-delta").hide(); } 
-            else { statElement.find(".statai-stat-delta").show(); }
             $displayElement.append(statElement);
         });
     }
