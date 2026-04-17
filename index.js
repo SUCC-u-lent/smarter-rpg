@@ -52,7 +52,7 @@ jQuery(async () => {
   });
   tempValue.css("width", `calc(${Math.max(1, String(tempValue.val()).length)}ch + 5px)`); // Set initial width based on value length
 
-  $("#statai-enabled-toggle").on("change", function() {
+  $("#statai-enabled-toggle").on("change", async function() {
     const enabled = $(this).is(":checked");
     if (enabled)
     {
