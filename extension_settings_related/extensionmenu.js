@@ -15,9 +15,9 @@ async function setupExtensionMenu(settingsExtensionContainer)
 function fallbackCopyToClipboard(text) {
     const textArea = document.createElement("textarea");
     textArea.value = text;
-    textArea.on("changed", function(){
+    textArea.onchange = function() {
         textArea.value = text; // No changing.
-    })
+    }
     callGenericPopup(textArea, POPUP_TYPE.TEXT,"",{ wide: false, large: false, allowVerticalScrolling: true })
 }
 function fallbackCopyFromClipboard() {
