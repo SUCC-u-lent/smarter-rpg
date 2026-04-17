@@ -10,16 +10,6 @@ import { checkAuxilStatus, checkOllamaStatus, setupEventListeners } from "./ai_h
 import { getPlaceholderValue, setPlaceholderValue } from "./placeholderConstants.js";
 
 jQuery(async () => {
-  if (!await checkAuxilStatus())
-  {
-    toastError("Auxil is not online. Please start Auxil and refresh the page to use the Smarter RPG extension.", {}, 10);
-    return;
-  }
-  if (!await checkOllamaStatus())
-  {
-    toastError("Ollama is not online. Please start Ollama and refresh the page to use the Smarter RPG extension.", {}, 10);
-    return;
-  }
 
   const settingsHtml = await $.get(`${extensionFolderPath}/html/example.html`);
   const $settings = $(settingsHtml);
@@ -33,6 +23,16 @@ jQuery(async () => {
   setupToolVisual();
   setupEventListeners()
 
+  if (!await checkAuxilStatus())
+  {
+    toastError("Auxil is not online. Please start Auxil and re-enable the extension to use the Smarter RPG extension.", {}, 10);
+    setActive(false); // Disable the extension if Auxil is not online, since it's required for AI features.
+  }
+  else if (!await checkOllamaStatus())
+  {
+    toastError("Ollama is not online. Please start Ollama and re-enable the extension to use the Smarter RPG extension.", {}, 10);
+    setActive(false); // Disable the extension if Ollama is not online, since it's required for AI features.
+  }
   $("#statai-enabled-toggle").prop("checked", isActive()).trigger("change"); // Set the toggle based on the current active state.
   $("#statai-visual-position-selection").val(getPosition()).trigger("change"); // Set the dropdown based on the current position setting.
   const tempValue = $("#statai-ai-temperature");
@@ -54,6 +54,19 @@ jQuery(async () => {
 
   $("#statai-enabled-toggle").on("change", function() {
     const enabled = $(this).is(":checked");
+    if (enabled)
+    {
+      if (!await checkAuxilStatus())
+      {
+        toastError("Auxil is not online. Please start Auxil and re-enable the extension to use the Smarter RPG extension.", {}, 10);
+        $(this).prop("checked", false); // Uncheck the toggle since Auxil is required for AI features.
+      }
+      else if (!await checkOllamaStatus())
+      {
+        toastError("Ollama is not online. Please start Ollama and re-enable the extension to use the Smarter RPG extension.", {}, 10);
+        $(this).prop("checked", false); // Uncheck the toggle since Ollama is required for AI features.
+      }
+    }
     setActive(enabled);
     logInfo("Smarter RPG extension " + (enabled ? "enabled" : "disabled") + ".");
     reloadDisplays(); // Reload displays to reflect the change immediately.
