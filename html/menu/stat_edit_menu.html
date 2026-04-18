@@ -1,0 +1,20 @@
+<div>
+    <!--Stats have: name, description, defaultValue, min, max, type, maxDelta-->
+    <label>Stat Name:</label><input type="text" id="statai_stat_name_input" class="statai-input fullwidth" placeholder="Enter stat name..."/><br/>
+    <label>Stat Description:</label><textarea id="statai_stat_description_input" class="statai-input fullwidth" placeholder="Enter stat description..."></textarea><br/>
+    <label>Default Value:</label><input type="number" id="statai_stat_default_input" class="statai-input fullwidth" placeholder="Enter default value..."/><br/>
+    <!--Type is a select menu between Number, String, Percentage, Range-->
+    <label>Stat Type:</label>
+    <select id="statai_stat_type_input" class="statai-input fullwidth">
+        <option value="number">Number</option>
+        <option value="string">String</option>
+        <option value="percentage">Percentage</option>
+        <option value="range">Range</option>
+    </select><br/>
+    <div id="statai_stat_range_inputs">
+        <label>Range Min:</label><input type="number" id="statai_stat_range_min_input" class="statai-input fullwidth" placeholder="Enter range minimum..."/><br/>
+        <label>Range Max:</label><input type="number" id="statai_stat_range_max_input" class="statai-input fullwidth" placeholder="Enter range maximum..."/><br/>
+    </div>
+    <label>Max Delta</label><input type="number" id="statai_stat_max_delta_input" class="statai-input fullwidth" placeholder="Enter max delta..."/><br/>
+    <button id="statai_stat_save_button" class="menu_button fullwidth">Save Stat</button>
+</div>

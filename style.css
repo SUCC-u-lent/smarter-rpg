@@ -1,0 +1,39 @@
+select.statai-dropdown
+{
+    background-color: var(--st-secondary-color);
+    color: var(--st-primary-color);
+    border: 1px solid var(--st-primary-color);
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 14px;
+}
+input.statai-input {
+    background-color: var(--st-secondary-color);
+    color: var(--st-primary-color);
+    border: 2px solid var(--st-primary-color);
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 14px;
+}
+
+.statai_stat_embed_stat,
+.statai-stat-display
+{
+    font-size: 0.85em
+}
+
+.statai-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.statai-action-row .menu_button {
+    flex: 1;
+    min-width: 140px;
+}
+input.dynasize{
+    background-color: var(--st-secondary-color);
+    color: var(--st-primary-color);
+}

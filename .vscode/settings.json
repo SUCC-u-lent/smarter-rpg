@@ -1,7 +1,7 @@
 {
     "js/ts.format.placeOpenBraceOnNewLineForControlBlocks": true,
     "js/ts.format.placeOpenBraceOnNewLineForFunctions": true,
-    "js/ts.tsserver.experimental.enableProjectDiagnostics": true,
+    "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
     "js/ts.implicitProjectConfig.checkJs": true,
     "js/ts.suggest.completeFunctionCalls": true,
     "js/ts.referencesCodeLens.enabled": true,
