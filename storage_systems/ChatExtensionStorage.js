@@ -61,7 +61,13 @@ function setChatExtensionStorageForMessage(chatId, message)
         chatStorage[existingMessageIndex] = message;
     }
     else {
-        chatStorage.push(message);
+        const fallbackMessageIndex = chatStorage.filter(m=>m.getMessageId() != null && m.getMessageId() != undefined)
+            .findIndex(m => areMessageIndexEqual(m.getMessageId(), messageId));
+        if (fallbackMessageIndex !== -1) {
+            chatStorage[fallbackMessageIndex] = message;
+        } else {
+            chatStorage.push(message);
+        }
     }
     setChatExtensionStorage(chatId, chatStorage);
 }
@@ -74,7 +80,15 @@ function setChatExtensionStorageForMessage(chatId, message)
 function getMessageFromId(chatId, messageId)
 {
     const chatStorage = getChatExtensionStorage(chatId);
-    return chatStorage.find(message => areMessageIdsEqual(message.getMessageId(), messageId)) || new StoredMessage();
+    const exactMatch = chatStorage.find(message => areMessageIdsEqual(message.getMessageId(), messageId));
+    if (exactMatch) return exactMatch;
+
+    const fallbackMatches = chatStorage.filter(message => areMessageIndexEqual(message.getMessageId(), messageId));
+    if (fallbackMatches.length > 0) {
+        return fallbackMatches[fallbackMatches.length - 1];
+    }
+
+    return new StoredMessage();
 }
 
 /**
@@ -99,6 +113,20 @@ function areMessageIdsEqual(left, right)
     // @ts-ignore
     const rightSwipeIndex = typeof right.getSwipeIndex === "function" ? right.getSwipeIndex() : right.swipeIndex;
     return leftMessageIndex === rightMessageIndex && leftSwipeIndex === rightSwipeIndex;
+}
+
+/**
+ * @param {unknown} left
+ * @param {unknown} right
+ */
+function areMessageIndexEqual(left, right)
+{
+    if (!left || !right || typeof left !== "object" || typeof right !== "object") return false;
+    // @ts-ignore
+    const leftMessageIndex = typeof left.getMessageIndex === "function" ? left.getMessageIndex() : left.messageIndex;
+    // @ts-ignore
+    const rightMessageIndex = typeof right.getMessageIndex === "function" ? right.getMessageIndex() : right.messageIndex;
+    return leftMessageIndex === rightMessageIndex;
 }
 
 /** @param {JQuery<HTMLElement>} message  */

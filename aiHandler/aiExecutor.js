@@ -6,7 +6,7 @@ import { getChatExtensionStorage, setChatExtensionStorageForMessage } from "../s
 import MessageId from "../storage_systems/classes/chat/MessageId.js";
 import StoredMessage from "../storage_systems/classes/chat/StoredMessage.js";
 import { getExtensionEnabled, getGlobalExtensionStorage } from "../storage_systems/GlobalExtensionStorage.js";
-import { clearMessageProcessing, isMessageProcessed } from "../utilities/ExtensionUtilities.js";
+import { isMessageProcessed } from "../utilities/ExtensionUtilities.js";
 
 
 const STAT_DESCRIPTION_LAYOUT = "{{stat_name}}'s Description: {{stat_description}}. It has the default value of {{stat_defaultValue}}, and should not exceed a change of {{stat_maxDelta}} from the current value."
@@ -87,10 +87,9 @@ function onMessageRendered(messageElement, preferCurrentMessage = false)
     const hasMessageBeenProcessed = isMessageProcessed(messageId)
     if (hasMessageBeenProcessed)
     {
-        debugLog("Current message already marked as processed; clearing marker (likely regen/edit)", { messageIndex: messageId.getMessageIndex(), swipeIndex: messageId.getSwipeIndex() });
-        clearMessageProcessing(messageId);
+        debugLog("Current message already processed; skipping generation", { messageIndex: messageId.getMessageIndex(), swipeIndex: messageId.getSwipeIndex() });
         return;
-    } // If we're at a message thats already been processed then its definitely a case of editing or regenerating a message.
+    }
     let targetMessageElement = preferCurrentMessage ? messageElement : getMessageElementByMesId(messageId.getMessageIndex() - 1);
     if (!preferCurrentMessage && targetMessageElement.length === 0) {
         debugLog("No previous message found; nothing to generate", { messageIndex: messageId.getMessageIndex() });
