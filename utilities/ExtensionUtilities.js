@@ -1,3 +1,6 @@
+import { getCurrentChatId } from "../../../../../script.js";
+import { getChatExtensionStorage, setChatExtensionStorage } from "../storage_systems/ChatExtensionStorage.js";
+import MessageId from "../storage_systems/classes/chat/MessageId.js";
 import { getExtensionFolderPath } from "./constants.js";
 
 /**
@@ -44,4 +47,31 @@ async function awaitHtmlElement(parentElement,selector, timeout = 10000)
     });
 }
 
-export { getJQueryHtml, awaitHtmlElement }
+/**
+ * @param {MessageId} messageId 
+ */
+function isMessageProcessed(messageId)
+{
+    /** @type {string|undefined|null} */
+    const currentChatId = getCurrentChatId();
+    if (!currentChatId) throw new Error("Could not determine current chat ID");
+    const currentChatStorage = getChatExtensionStorage(currentChatId)
+    const messageStorage = currentChatStorage.filter(m=>m.getMessageId()!=null&&m.getMessageId()!=undefined).find(m => m.getMessageId().equals(messageId));
+    return messageStorage ? messageStorage.isProcessed() : false;
+}
+
+/**
+ * @param {MessageId} messageId 
+ */
+function clearMessageProcessing(messageId){
+    /** @type {string|undefined|null} */
+    const currentChatId = getCurrentChatId();
+    if (!currentChatId) throw new Error("Could not determine current chat ID");
+    const currentChatStorage = getChatExtensionStorage(currentChatId)
+    // to clear the message processing, delete it from storage.
+    const newChatStorage = currentChatStorage.filter(m=>m.getMessageId()==null||m.getMessageId()==undefined||!m.getMessageId().equals(messageId));
+    setChatExtensionStorage(currentChatId, newChatStorage);
+}
+
+
+export { getJQueryHtml, awaitHtmlElement, isMessageProcessed, clearMessageProcessing }

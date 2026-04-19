@@ -9,6 +9,15 @@ export const extensionEventTypes = {
     CLEAR_PROFILES: 'clear_profiles',
     PROFILE_LOADED: 'profile_loaded',
     RELOAD_CHAT_VISUALS: 'reload_chat_visuals',
+    EXTENSION_ENABLED_CHANGED: 'extension_enabled_changed',
+    FONT_SIZE_CHANGED: 'font_size_changed',
+    CONFIG_SAVED: 'config_saved',
+    SETTINGS_SAVED: 'settings_saved',
+    CONNECTION_URL_CHANGED: 'connection_url_changed',
+    CONNECTION_STATUS_CHANGED: 'connection_status_changed',
+    CONNECTION_LOST: 'connection_lost',
+    MODEL_CHANGED: 'model_changed',
+    CACHE_CLEARED: 'cache_cleared',
 };
 
 export const extensionEventSource = new EventEmitter([]);
@@ -20,6 +29,7 @@ export function setupLogEventListeners()
     console.log("extensionEventTypes:", extensionEventTypes);
     
     for (const eventType in extensionEventTypes) {
+        // @ts-ignore
         const eventValue = extensionEventTypes[eventType];
         console.log(`Registering listener for: ${eventValue}`);
         extensionEventSource.on(eventValue, () => {

@@ -50,4 +50,8 @@ export default class StoredMessage extends SillyTavernClassBase {
     {
         this._setField("stats", stats);
     }
+    isProcessed()
+    {
+        return true; // For now assume if it exists then its been processed.
+    }
 }

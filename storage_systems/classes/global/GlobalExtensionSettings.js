@@ -1,6 +1,8 @@
 import Config from "./ConfigClass.js";
 import Profile from "./ProfileClass.js";
 import SillyTavernClassBase from "../SillyTavernClassBase.js";
+import { setGlobalExtensionStorage } from "../../GlobalExtensionStorage.js";
+import { extensionEventSource, extensionEventTypes } from "../../../events/ExtensionEvents.js";
 
 export class GlobalExtensionSettings extends SillyTavernClassBase {
     static get fieldSchema()
@@ -85,5 +87,21 @@ export class GlobalExtensionSettings extends SillyTavernClassBase {
         if (index !== -1) {
             profiles.splice(index, 1);
         }
+    }
+    /**
+     * @param {Config} config
+     */
+    replaceConfig(config)
+    {
+        if (!(config instanceof Config)) {
+            throw new Error("Invalid config.");
+        }
+        this._setField("config", config);
+    }
+
+    save()
+    {
+        setGlobalExtensionStorage(this);
+        extensionEventSource.emit(extensionEventTypes.SETTINGS_SAVED, this)
     }
 }

@@ -17,6 +17,11 @@ export async function runProfileTabUI(profileTab)
     profileElement.find("#statai_stat_template").remove() // Remove the template from the DOM, we'll keep it in memory to clone for new stats.
     const selectMenu = profileTab.find("#statai_profile_select")
     const createProfileButton = profileTab.find("#statai-create-profile")
+    extensionEventSource.on(extensionEventTypes.CACHE_CLEARED,()=>{
+        selectMenu.empty() // Clear the select menu.
+        selectMenu.append(`<option value="">Select A Profile</option>`) // Add back the default option.
+        profileTab.find("#statai-profile-container").empty() // Clear the profile editor.
+    })
     createProfileButton.off("click").on("click",()=>{
         const profileName = prompt("Enter a name for the new profile:")
         if (!profileName)
@@ -32,6 +37,7 @@ export async function runProfileTabUI(profileTab)
         console.log("Pushed profile to storage, now saving storage.")
         console.log(`Current profiles in storage: ${storage.getProfiles().map((/** @type {{ getName: () => string; }} */ p) => p.getName()).join(", ")}`)
         setGlobalExtensionStorage(storage)
+        selectMenu.val(profile.getId()).trigger("change") // Select the new profile in the select menu.
     })
     const clearProfilesButton = profileTab.find("#statai-clear-profile")
     clearProfilesButton.off("click").on("click",()=>{

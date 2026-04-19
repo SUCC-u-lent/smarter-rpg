@@ -1,6 +1,6 @@
 import { EmbedPosition } from "../../../enums/EmbedPosition.js";
 import { getCharacterData, getCharacterIdByName } from "../../CharacterExtensionStorage.js";
-import { getMessageAuthor, getMessageFromId } from "../../ChatExtensionStorage.js";
+import { getMessageAuthor, getMessageFromId, setChatExtensionStorageForMessage } from "../../ChatExtensionStorage.js";
 import { getGlobalExtensionStorage } from "../../GlobalExtensionStorage.js";
 import { CharacterProfileData } from "../character/CharacterProfileData.js";
 import CharacterStatsInstance from "./CharacterStatsInstance.js";
@@ -36,6 +36,7 @@ export default class RPGMessage
         this.container = container;
         this.messageElement = messageElement;
         this.messageIndex = messageIndex;
+        this.chatId = chatId;
         const characterId = getCharacterIdByName(this.author)
         if (!characterId) throw new Error(`Could not find character ID for author ${this.author}`);
         this.characterId = characterId;
@@ -94,10 +95,15 @@ export default class RPGMessage
         return messageStats || CharacterStatsInstance.fromDefaultStats(defaultStats);
     }
     getMessageId(){
-        let swipid = $(this.messageElement).attr("swipeid");
-        if (!swipid) swipid = "0";
-        const swipeIndex = parseInt(swipid);
-        return new MessageId(this.messageIndex, swipeIndex);
+        const rawMessageIndex = $(this.messageElement).attr("mesid");
+        const parsedMessageIndex = rawMessageIndex ? parseInt(rawMessageIndex, 10) : NaN;
+        const messageIndex = Number.isNaN(parsedMessageIndex) ? this.messageIndex : parsedMessageIndex;
+
+        const rawSwipeIndex = $(this.messageElement).attr("swipeid");
+        const parsedSwipeIndex = rawSwipeIndex ? parseInt(rawSwipeIndex, 10) : NaN;
+        const swipeIndex = Number.isNaN(parsedSwipeIndex) ? 0 : parsedSwipeIndex;
+
+        return new MessageId(messageIndex, swipeIndex);
     }
     /** 
      * @param {string} chatId
@@ -108,6 +114,19 @@ export default class RPGMessage
         storedMessage.setChatId(chatId);
         storedMessage.setMessageId(this.getMessageId());
         return storedMessage;
+    }
+    /**
+     * @param {CharacterStatsInstance} stats
+     */
+    setStats(stats)
+    {
+        this.stats = stats;
+    }
+    save()
+    {
+        const storedMessage = this.parseMessage(this.charData.getId());
+        storedMessage.setStats(this.stats);
+        setChatExtensionStorageForMessage(this.chatId,storedMessage);
     }
 
 }

@@ -21,6 +21,18 @@ class MessageId extends SillyTavernClassBase {
     getSwipeIndex() {
         return this._getField("swipeIndex");
     }
+    /**
+     * @param {unknown} other
+     */
+    equals(other)
+    {
+        if (!other || typeof other !== "object") return false;
+        // @ts-ignore
+        const otherMessageIndex = typeof other.getMessageIndex === "function" ? other.getMessageIndex() : other.messageIndex;
+        // @ts-ignore
+        const otherSwipeIndex = typeof other.getSwipeIndex === "function" ? other.getSwipeIndex() : other.swipeIndex;
+        return this.getMessageIndex() === otherMessageIndex && this.getSwipeIndex() === otherSwipeIndex;
+    }
     /** @param {JQuery<HTMLElement>} message */
     static fromMessage(message)
     {

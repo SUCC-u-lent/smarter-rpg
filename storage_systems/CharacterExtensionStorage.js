@@ -100,4 +100,4 @@ function getCharacterIdByName(name)
     return trimmedName.toLowerCase().replace(/\s/g, "_");
 }
 
-export { getCharacterData, setCharacterData, getAllCharacterData, setAllCharacterData, getCurrentCharacterName, getCharacterIdByName, isValidCharacterName }
+export { getCharacterData, setCharacterData, getCurrentCharacterName, getCharacterIdByName, isValidCharacterName }

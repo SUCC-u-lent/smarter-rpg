@@ -43,5 +43,10 @@ function setGlobalExtensionStorage(storage)
         throw new Error("Storage must be an instance of GlobalExtensionSettings");
     }
 }
+function getExtensionEnabled()
+{
+    const storage = getGlobalExtensionStorage();
+    return storage.getConfig().getEnabled();
+}
 
-export { getGlobalExtensionStorage, setGlobalExtensionStorage }
+export { getGlobalExtensionStorage, setGlobalExtensionStorage, getExtensionEnabled }

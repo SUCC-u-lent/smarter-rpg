@@ -1,32 +1,9 @@
 import { saveSettingsDebounced } from "../../../../../script.js";
 import { extension_settings } from "../../../../extensions.js";
 import { getExtensionName } from "../utilities/constants.js";
-import { getCurrentChat } from "../utilities/SillyTavernInterpreter.js";
 import { isValidCharacterName } from "./CharacterExtensionStorage.js";
 import MessageId from "./classes/chat/MessageId.js";
 import StoredMessage from "./classes/chat/StoredMessage.js";
-
-function getCurrentChatID()
-{
-    const currentChat = getCurrentChat()
-    const id = currentChat ? currentChat.chatId : null;
-    if (!id) throw new Error("Could not determine current chat ID");
-    return id;
-}
-
-function getCurrentChatExtensionStorage()
-{
-    const chatId = getCurrentChatID();
-    return getChatExtensionStorage(chatId);
-}
-
-/**
- * @param {StoredMessage[]} storage
- */
-function setCurrentChatExtensionStorage(storage){
-    const chatId = getCurrentChatID();
-    setChatExtensionStorage(chatId, storage);
-}
 
 /**
  * @param {string} chatId
@@ -71,6 +48,25 @@ function setChatExtensionStorage(chatId, storage)
 }
 
 /**
+ * @param {string} chatId
+ * @param {StoredMessage} message
+ */
+function setChatExtensionStorageForMessage(chatId, message)
+{
+    const chatStorage = getChatExtensionStorage(chatId);
+    const messageId = message.getMessageId();
+    const existingMessageIndex = chatStorage.filter(m=>m.getMessageId() != null && m.getMessageId() != undefined)
+        .findIndex(m => areMessageIdsEqual(m.getMessageId(), messageId));
+    if (existingMessageIndex !== -1)    {
+        chatStorage[existingMessageIndex] = message;
+    }
+    else {
+        chatStorage.push(message);
+    }
+    setChatExtensionStorage(chatId, chatStorage);
+}
+
+/**
  * 
  * @param {string} chatId 
  * @param {MessageId} messageId 
@@ -78,7 +74,31 @@ function setChatExtensionStorage(chatId, storage)
 function getMessageFromId(chatId, messageId)
 {
     const chatStorage = getChatExtensionStorage(chatId);
-    return chatStorage.find(message => message.getMessageId().equals(messageId)) || new StoredMessage();
+    return chatStorage.find(message => areMessageIdsEqual(message.getMessageId(), messageId)) || new StoredMessage();
+}
+
+/**
+ * @param {unknown} left
+ * @param {unknown} right
+ */
+function areMessageIdsEqual(left, right)
+{
+    if (!left || !right || typeof left !== "object" || typeof right !== "object") return false;
+
+    // @ts-ignore
+    if (typeof left.equals === "function") return left.equals(right);
+    // @ts-ignore
+    if (typeof right.equals === "function") return right.equals(left);
+
+    // @ts-ignore
+    const leftMessageIndex = typeof left.getMessageIndex === "function" ? left.getMessageIndex() : left.messageIndex;
+    // @ts-ignore
+    const leftSwipeIndex = typeof left.getSwipeIndex === "function" ? left.getSwipeIndex() : left.swipeIndex;
+    // @ts-ignore
+    const rightMessageIndex = typeof right.getMessageIndex === "function" ? right.getMessageIndex() : right.messageIndex;
+    // @ts-ignore
+    const rightSwipeIndex = typeof right.getSwipeIndex === "function" ? right.getSwipeIndex() : right.swipeIndex;
+    return leftMessageIndex === rightMessageIndex && leftSwipeIndex === rightSwipeIndex;
 }
 
 /** @param {JQuery<HTMLElement>} message  */
@@ -91,10 +111,9 @@ function getMessageAuthor(message)
 }
 
 export { 
-    getCurrentChatExtensionStorage, 
-    setCurrentChatExtensionStorage, 
     getChatExtensionStorage, 
     setChatExtensionStorage,
     getMessageAuthor,
-    getMessageFromId
+    getMessageFromId,
+    setChatExtensionStorageForMessage
 }
