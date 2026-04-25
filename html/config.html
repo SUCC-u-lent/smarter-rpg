@@ -1,0 +1,19 @@
+<div class="inline-drawer bgutils-submodule" id="statai_ui_config_module">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b data-i18n="Config">Config</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down interactable" tabindex="0" role="button"></div>
+    </div>
+    <div class="inline-drawer-content">
+        <div data-tg-samplers="temp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+            <small>
+                <span data-i18n="Font Size">Font Size</span>
+                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font Size controls the size of the text" title="Font Size controls the size of the text:
+    - smaller values lead to smaller text.
+    - larger values increase the text size.
+    Set to 1.0 for the default size."></div>
+            </small>
+            <input class="neo-range-slider" type="range" id="statai_font_size_multiplier" name="volume" min="0.7" max="2.0" step="0.01" x-setting-id="statai_font_size_multiplier">
+            <input class="neo-range-input" type="number" min="0.7" max="2.0" step="0.01" data-for="statai_font_size_multiplier" id="statai_font_size_counter">
+        </div>
+    </div>
+</div>

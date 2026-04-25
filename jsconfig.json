@@ -1,7 +1,14 @@
 {
   "compilerOptions": {
     "checkJs": true,
-    "strict": true
+    "target": "ESNext",
+    "module": "ESNext",
+    "allowUmdGlobalAccess": true,
+    "allowSyntheticDefaultImports": true,
+    "strictBindCallApply": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true
   },
-  "include": ["**/*.js"]
+  "include": ["./**/*.js"]
 }

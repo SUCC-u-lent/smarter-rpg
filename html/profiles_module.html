@@ -1,0 +1,22 @@
+<div class="inline-drawer bgutils-submodule" id="statai_profiles_module">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b data-i18n="Profiles">Profiles</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down interactable" tabindex="0" role="button"></div>
+    </div>
+    <div class="inline-drawer-content">
+        <select id="statai_profiles_select"></select>
+        <div class="flex-container alignitemscenter">
+            <div id="statai_profile_new" class="menu_button fa-solid fa-plus interactable" title="New Profile" data-i18n="[title]New Profile" tabindex="0" role="button"></div>
+            <div id="statai_profile_remove" class="menu_button fa-solid red_button fa-skull interactable" title="Remove Profile" data-i18n="[title]Remove Profile" tabindex="0" role="button"></div>
+        </div>
+        <h3 id="statai_active_profile_title">No Profile Loaded</h3>
+        <div class="flex-container alignitemscenter">
+            <label for="statai_stat_create" class="menu_button menu_button_icon interactable" tabindex="0" role="button">
+                <input id="statai_stat_create" type="checkbox" class="displayNone">
+                <i class="fa-solid fa-pencil"></i>
+                <small data-i18n="ext_statai_stat_create">New Stat</small>
+            </label>
+        </div>
+        <div id="statai_active_profile_stats"></div>
+    </div>
+</div>

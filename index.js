@@ -1,21 +1,17 @@
-import { setupAIExecutor } from "./aiHandler/aiExecutor.js"
-import { setupChatVisuals } from "./chathandler/chatVisuals.js"
-import { setupLogEventListeners } from "./events/ExtensionEvents.js"
-import { setupCustomStyleClasses } from "./ui_handler/customStyleClassFramework.js"
-import { setupConnectivitySettingUI } from "./ui_handler/settings/setupConnectivitySettingsUI.js"
-import { setupPromptSettingsUI } from "./ui_handler/settings/setupPromptSettingsUI.js"
-import { setupCharacterUI } from "./ui_handler/setupCharacterUI.js" // All imports must have their file extension specified.
+import { loadListeners } from "./events/extension_events.js";
+import loadUI from "./ui/uiLoader.js";
+import wireUI from "./ui/uiSetup.js";
+import { loadChat } from "./chat/chat_loader.js";
+import { renderCharacterPlacementUI } from "./characterdata/rendering/wireCharacterPlacementUI.js";
+import {initHeartbeat} from "./ai/ai_heartbeat.js";
 
-jQuery(async()=>{
-    // Always run first.
-    setupLogEventListeners()
-
-    await setupCustomStyleClasses()
-    await setupConnectivitySettingUI()
-    await setupPromptSettingsUI()
+jQuery(async () => {
+    loadListeners();
     
-    // These depend on listeners registered by setupSettingUI, so must run after.
-    setupCharacterUI()
-    setupChatVisuals()
-    setupAIExecutor()
-})
+    await wireUI();
+    loadUI();
+    await renderCharacterPlacementUI();
+    initHeartbeat();
+
+    loadChat();
+});

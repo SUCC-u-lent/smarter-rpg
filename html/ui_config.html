@@ -1,0 +1,36 @@
+<div class="inline-drawer bgutils-submodule" id="statai_config_module">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b>Config</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down interactable" tabindex="0" role="button"></div>
+    </div>
+    <div class="inline-drawer-content">
+        <label for="statai_auxil_url">Auxil URL</label>
+        <input id="statai_auxil_url" class="text_pole" type="text" />
+
+        <label for="statai_auxil_model">Auxil Model</label>
+        <input id="statai_auxil_model" class="text_pole" type="text" />
+
+        <label class="checkbox_label" for="statai_use_main_api_fallback">
+            <input id="statai_use_main_api_fallback" type="checkbox" />
+            Use main API fallback
+        </label>
+
+        <label for="statai_history_message_count">History Message Count</label>
+        <input id="statai_history_message_count" class="text_pole" type="number" min="1" step="1" />
+
+        <label for="statai_stat_position">Stat Prompt Position</label>
+        <input id="statai_stat_position" class="text_pole" type="number" min="0" step="1" />
+
+        <label for="statai_stat_depth">Stat Prompt Depth</label>
+        <input id="statai_stat_depth" class="text_pole" type="number" min="0" step="1" />
+
+        <label class="checkbox_label" for="statai_stat_worldinfo_included">
+            <input id="statai_stat_worldinfo_included" type="checkbox" />
+            Include in world info
+        </label>
+
+        <label for="statai_font_size_multiplier">Font Size Multiplier</label>
+        <input id="statai_font_size_multiplier" class="neo-range-slider" type="range" min="0.5" max="3" step="0.05" />
+        <input id="statai_font_size_counter" class="text_pole" type="number" min="0.5" max="3" step="0.05" />
+    </div>
+</div>
