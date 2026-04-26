@@ -3,6 +3,7 @@ import { power_user } from "../../../../power-user.js";
 import CharacterStorage from "../storage/CharacterStorage.js";
 import ChatStorage from "../storage/ChatStorage.js";
 import { getPersonaList } from "../utilities/ExtensionUtilities.js";
+import BaseCharacter from "./base_character.js";
 import GlobalCharacter from "./global_character.js";
 import ChatMessageData from "./message_data.js";
 
@@ -85,36 +86,36 @@ export default class ChatCharacter extends GlobalCharacter
     }
     static getCharacterByName(name)
     {
-        const char = this.getCharacters().find(c=>c.name === name);
+        const char = this.getCharacters().find(c=>BaseCharacter.isNameMatching(c.getName(), name));
         if(!char) throw new Error(`Character with name "${name}" not found`);
         return char;
     }
     static getCharacterByAvatar(avatar)
     {
-        const char = this.getCharacters().find(c=>c.avatar === avatar);
+        const char = this.getCharacters().find(c=>BaseCharacter.isAvatarMatching(c.getAvatar(), avatar));
         if(!char) throw new Error(`Character with avatar "${avatar}" not found`);
         return char;
     }
     static getPersonaByName(name)
     {
-        const char = this.getPersonas().find(c=>c.name === name);
+        const char = this.getPersonas().find(c=>BaseCharacter.isNameMatching(c.getName(), name));
         if(!char) throw new Error(`Persona with name "${name}" not found`);
         return char;
     }
     static getPersonaByAvatar(avatar)
     {
-        const char = this.getPersonas().find(c=>c.avatar === avatar);
+        const char = this.getPersonas().find(c=>BaseCharacter.isAvatarMatching(c.getAvatar(), avatar));
         if(!char) throw new Error(`Persona with avatar "${avatar}" not found`);
         return char;
     }
     static getByName(name)
     {
-        const char = this.getAllCharacters().find(c=>c.name === name);
+        const char = this.getAllCharacters().find(c=>BaseCharacter.isNameMatching(c.getName(), name));
         if(!char) throw new Error(`Character or Persona with name "${name}" not found`);
         return char;
     }
     static getByAvatar(avatar)    {
-        const char = this.getAllCharacters().find(c=>c.avatar === avatar);
+        const char = this.getAllCharacters().find(c=>BaseCharacter.isAvatarMatching(c.getAvatar(), avatar));
         if(!char) throw new Error(`Character or Persona with avatar "${avatar}" not found`);
         return char;
     }

@@ -103,8 +103,12 @@ export default class BaseCharacter
     static isNameMatching(value,name, inverted=false)
     {
         if (inverted)
-        {return name.toLowerCase().includes(value.toLowerCase());}
-        return value.toLowerCase().includes(name.toLowerCase());
+        {
+            const regex = new RegExp(`(${value})`,"gim");
+            return regex.test(name);
+        }
+        const regex = new RegExp(`(${name})`,"gim")
+        return regex.test(value);
     }
     static getCharacterByName(name)
     {
