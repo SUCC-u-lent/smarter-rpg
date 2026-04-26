@@ -114,6 +114,11 @@ export default class ChatMessageData
     }
     verifyStats()
     {
+        if (!GlobalCharacter.isValidName(this.#author))
+        {
+            this.#stats = {};
+            return;
+        }
         // Removes any stat that does now show up in the characters active profile.
         const character = GlobalCharacter.getByName(this.#author);
         if (!character)
